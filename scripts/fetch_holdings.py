@@ -181,6 +181,8 @@ def normalize(raw, debug: bool = False):
     for h in holdings:
         if h["weight"] is not None:
             h["weight"] = round(h["weight"], 4)
+        if h["shares"] is not None:
+            h["shares"] = int(round(h["shares"]))   # 수량은 정수 (변환 잔여 소수 제거)
 
     holdings.sort(key=lambda z: (z["weight"] or 0), reverse=True)
     return base_date, holdings
@@ -207,40 +209,47 @@ def fetch_latest_available(start_yyyymmdd: str, debug: bool = False):
 
 # ── 변동 계산 ────────────────────────────────────────────────────────────
 def diff(cur, prev):
+    """수량(주식 수) 변동을 중심으로 비교한다.
+
+    비중은 주가 등락만으로도 변하지만, 수량은 펀드매니저가 실제로 매매해야만 바뀐다.
+    그래서 added/removed(편입·편출)와 함께 bought/sold(추가매수·일부매도)를 수량 기준으로 분류한다.
+    """
     if not prev:
-        return {"added": [], "removed": [], "increased": [], "decreased": []}
-    pmap = {h["key"]: h for h in prev} if prev else {}
+        return {"added": [], "removed": [], "bought": [], "sold": []}
+    pmap = {h["key"]: h for h in prev}
     cmap = {h["key"]: h for h in cur}
-    added, removed, increased, decreased = [], [], [], []
+    added, removed, bought, sold = [], [], [], []
 
     for k, h in cmap.items():
         if h.get("is_cash"):
             continue
         if k not in pmap:
-            added.append({"name": h["name"], "ticker": h["ticker"], "weight": h["weight"]})
+            added.append({"name": h["name"], "ticker": h["ticker"],
+                          "weight": h["weight"], "shares": h["shares"]})
             continue
-        cw = h["weight"] or 0
-        pw = pmap[k]["weight"] or 0
-        d = round(cw - pw, 4)
-        if d >= WEIGHT_EPS:
-            increased.append({"name": h["name"], "ticker": h["ticker"],
-                              "weight": cw, "prev_weight": pw, "delta": d})
-        elif d <= -WEIGHT_EPS:
-            decreased.append({"name": h["name"], "ticker": h["ticker"],
-                              "weight": cw, "prev_weight": pw, "delta": d})
+        cs = h["shares"] or 0
+        ps = pmap[k]["shares"] or 0
+        ds = round(cs - ps, 4)
+        if ds == 0:
+            continue
+        rec = {"name": h["name"], "ticker": h["ticker"],
+               "shares": cs, "prev_shares": ps, "share_delta": ds,
+               "weight": h["weight"], "prev_weight": pmap[k]["weight"],
+               "weight_delta": round((h["weight"] or 0) - (pmap[k]["weight"] or 0), 4)}
+        (bought if ds > 0 else sold).append(rec)
 
     for k, h in pmap.items():
         if h.get("is_cash"):
             continue
         if k not in cmap:
-            removed.append({"name": h["name"], "ticker": h["ticker"], "weight": h["weight"]})
+            removed.append({"name": h["name"], "ticker": h["ticker"],
+                            "weight": h["weight"], "shares": h["shares"]})
 
     added.sort(key=lambda z: z["weight"] or 0, reverse=True)
     removed.sort(key=lambda z: z["weight"] or 0, reverse=True)
-    increased.sort(key=lambda z: z["delta"], reverse=True)
-    decreased.sort(key=lambda z: z["delta"])
-    return {"added": added, "removed": removed,
-            "increased": increased, "decreased": decreased}
+    bought.sort(key=lambda z: z["share_delta"], reverse=True)
+    sold.sort(key=lambda z: z["share_delta"])
+    return {"added": added, "removed": removed, "bought": bought, "sold": sold}
 
 
 # ── 저장 ────────────────────────────────────────────────────────────────
@@ -290,7 +299,7 @@ def main():
     c = latest["changes"]
     print(f"[ok] {date_iso} · {snap['count']}종목 저장. 전일({prev_date}) 대비 "
           f"편입 {len(c['added'])} · 편출 {len(c['removed'])} · "
-          f"비중↑ {len(c['increased'])} · 비중↓ {len(c['decreased'])}")
+          f"추가매수 {len(c['bought'])} · 일부매도 {len(c['sold'])}")
     return 0
 
 
