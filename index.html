@@ -123,9 +123,14 @@
   @media(max-width:720px){ .charts{grid-template-columns:1fr} }
 
   .perf{margin-top:28px}
-  .perf-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .perf-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px}
   .perf-head h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .perf-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .perf-sub{font-size:12px;color:var(--faint)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{appearance:none;border:0;background:#fff;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:5px 11px;cursor:pointer}
+  .seg button.on{background:var(--accent);color:#fff}
+  .seg button+button{border-left:1px solid var(--line)}
   .legend{display:flex;flex-wrap:wrap;gap:16px;margin:6px 0 7px;font-size:13px;color:var(--muted)}
   .legend .lg{display:inline-flex;align-items:center;gap:7px}
   .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;flex-shrink:0}
@@ -358,27 +363,48 @@ function perfLegend(perf){
   return h;
 }
 
-function renderPerf(perf){
+let CURPERF=null, PERFMODE="month";
+
+function toYearly(series){
+  if(!series||series.length<=1) return series||[];
+  const byYear=new Map();                 // 각 연도의 마지막 데이터(정렬돼 있어 뒤가 덮어씀)
+  series.forEach(r=>byYear.set(r.month.slice(0,4), r));
+  const seen=new Set(), out=[];
+  [series[0], ...byYear.values()]
+    .sort((a,b)=>a.month<b.month?-1:1)
+    .forEach(r=>{ if(!seen.has(r.month)){ seen.add(r.month); out.push(r); } });
+  return out;
+}
+
+function renderPerf(){
   const box=$("#perf");
-  if(!perf||!perf.series||!perf.series.length){ box.style.display="none"; box.innerHTML=""; return; }
+  if(!CURPERF||!CURPERF.series||!CURPERF.series.length){ box.style.display="none"; box.innerHTML=""; return; }
+  const series = PERFMODE==="year" ? toYearly(CURPERF.series) : CURPERF.series;
+  const perf = Object.assign({}, CURPERF, {series});
   const fx=(curEtf&&curEtf.slug==="us-nasdaq")
     ? "지수는 현지통화(달러), ETF는 원화 기준 수익률이라 환율 효과가 포함됩니다. " : "";
-  const body=perf.series.length<2
-    ? `<div class="detail-note">아직 한 시점뿐이에요. 매월 말 데이터가 쌓이면 추이선이 그려져요.</div>`
+  const modeLabel = PERFMODE==="year" ? "연도별" : "월별";
+  const seg=`<div class="seg">`+
+    `<button class="${PERFMODE==='month'?'on':''}" data-m="month">월별</button>`+
+    `<button class="${PERFMODE==='year'?'on':''}" data-m="year">연도별</button></div>`;
+  const body=series.length<2
+    ? `<div class="detail-note">아직 한 시점뿐이에요. 데이터가 쌓이면 추이선이 그려져요.</div>`
     : `<div class="linewrap">${lineChartSVG(perf)}</div>`;
   box.innerHTML=
     `<div class="perf-head"><h2>벤치마크 수익률 비교</h2>`+
-    `<span class="perf-sub">상장일 ${(perf.base||"").replace("-",".")} 이후 누적수익률 · 월별</span></div>`+
+    `<div class="perf-right"><span class="perf-sub">상장일 ${(perf.base||"").replace("-",".")} 이후 누적수익률 · ${modeLabel}</span>${seg}</div></div>`+
     `<div class="legend">${perfLegend(perf)}</div>`+
     `<div class="perf-cap">이름 옆 숫자는 상장일 이후 <b>누적수익률</b>, 괄호는 ETF가 해당 지수보다 앞선 폭인 <b>초과수익</b>(ETF 수익률 − 지수 수익률, %p)입니다.</div>`+
     `${body}`+
-    `<div class="perf-foot">${fx}매월 마지막 거래일 종가 기준. 정보 제공용이며 투자 권유가 아닙니다.</div>`;
+    `<div class="perf-foot">${fx}${PERFMODE==='year'?'매년 마지막':'매월 마지막'} 거래일 종가 기준. 정보 제공용이며 투자 권유가 아닙니다.</div>`;
   box.style.display="block";
 }
 
 async function loadPerf(slug){
-  try{ renderPerf(await jget(`./data/${slug}/perf.json`)); }
-  catch(e){ const b=$("#perf"); b.style.display="none"; b.innerHTML=""; }
+  PERFMODE="month";
+  try{ CURPERF=await jget(`./data/${slug}/perf.json`); }
+  catch(e){ CURPERF=null; }
+  renderPerf();
 }
 
 // ── 종목 클릭 시 월별 추이 차트 ───────────────────────────────────────────
@@ -552,6 +578,10 @@ function loadDemo(){
 }
 
 $("#table").addEventListener("click",onRowClick);
+$("#perf").addEventListener("click",function(e){
+  var b=e.target.closest(".seg button"); if(!b) return;
+  PERFMODE=b.getAttribute("data-m"); renderPerf();
+});
 init();
 </script>
 </body>
