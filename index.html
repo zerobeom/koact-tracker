@@ -125,10 +125,12 @@
   .perf-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px}
   .perf-head h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em}
   .perf-sub{font-size:12px;color:var(--faint)}
-  .legend{display:flex;flex-wrap:wrap;gap:16px;margin:6px 0 12px;font-size:13px;color:var(--muted)}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin:6px 0 7px;font-size:13px;color:var(--muted)}
   .legend .lg{display:inline-flex;align-items:center;gap:7px}
   .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;flex-shrink:0}
   .legend b{color:var(--text);font-weight:800}
+  .perf-cap{font-size:11px;color:var(--faint);margin:0 0 12px;line-height:1.6}
+  .perf-cap b{color:var(--muted);font-weight:700}
   .legend .pos{color:var(--in);font-weight:700}
   .legend .neg{color:var(--out);font-weight:700}
   .linewrap{border:1px solid var(--line);border-radius:14px;padding:12px 10px 6px;background:var(--panel)}
@@ -345,7 +347,7 @@ function perfLegend(perf){
   let h=`<span class="lg"><i style="background:${ETF_COLOR}"></i>${perf.etf_label} <b>${fmtRet(etfv)}</b></span>`;
   perf.benchmarks.forEach(b=>{
     const v=last[b.k], diff=(etfv!=null&&v!=null)?etfv-v:null;
-    const tag=diff==null?"":` <span class="${diff>=0?'pos':'neg'}">(${diff>=0?'▲':'▼'}${Math.abs(diff).toFixed(1)}%p)</span>`;
+    const tag=diff==null?"":` <span class="${diff>=0?'pos':'neg'}">(초과 ${diff>=0?'▲':'▼'}${Math.abs(diff).toFixed(1)}%p)</span>`;
     h+=`<span class="lg"><i style="background:${col[b.k]}"></i>${b.label} <b>${fmtRet(v)}</b>${tag}</span>`;
   });
   return h;
@@ -361,8 +363,10 @@ function renderPerf(perf){
     : `<div class="linewrap">${lineChartSVG(perf)}</div>`;
   box.innerHTML=
     `<div class="perf-head"><h2>벤치마크 수익률 비교</h2>`+
-    `<span class="perf-sub">${(perf.base||"").replace("-",".")} 기준 누적수익률 · 월별</span></div>`+
-    `<div class="legend">${perfLegend(perf)}</div>${body}`+
+    `<span class="perf-sub">상장일 ${(perf.base||"").replace("-",".")} 이후 누적수익률 · 월별</span></div>`+
+    `<div class="legend">${perfLegend(perf)}</div>`+
+    `<div class="perf-cap">이름 옆 숫자는 상장일 이후 <b>누적수익률</b>, 괄호는 ETF가 해당 지수보다 앞선 폭인 <b>초과수익</b>(ETF 수익률 − 지수 수익률, %p)입니다.</div>`+
+    `${body}`+
     `<div class="perf-foot">${fx}매월 마지막 거래일 종가 기준. 정보 제공용이며 투자 권유가 아닙니다.</div>`;
   box.style.display="block";
 }
