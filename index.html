@@ -31,6 +31,7 @@
   .datepick{margin-left:auto;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
   .pick{display:flex;flex-direction:column;gap:5px}
   .datepick label{font-size:11px;color:var(--faint);letter-spacing:.04em;font-weight:600}
+  #etf{min-width:190px;font-weight:700}
   select{appearance:none;background:#fff;color:var(--text);
     border:1px solid var(--line);border-radius:10px;padding:9px 34px 9px 13px;
     font:inherit;font-size:14px;font-weight:600;cursor:pointer;
@@ -123,9 +124,11 @@
   <header>
     <div class="brand">
       <span class="eyebrow">KoAct · 일별 구성종목 추적</span>
-      <h1>미국나스닥성장기업액티브<span class="code num">0015B0</span></h1>
+      <h1 id="etfTitle">미국나스닥성장기업액티브<span class="code num">0015B0</span></h1>
     </div>
     <div class="datepick">
+      <div class="pick"><label for="etf">ETF</label>
+        <select id="etf" aria-label="ETF 선택"></select></div>
       <div class="pick"><label for="date">기준일</label>
         <select id="date" aria-label="기준일 선택"></select></div>
       <div class="pick"><label for="base">비교 대상일</label>
@@ -269,32 +272,57 @@ function render(snapshot,baseDate,changes){
 }
 
 async function jget(url){ const r=await fetch(url,{cache:"no-store"}); if(!r.ok) throw new Error(url); return r.json(); }
-const snapshotOf=(iso)=>jget(`./data/snapshots/${iso}.json`);
+const snapshotOf=(slug,iso)=>jget(`./data/${slug}/snapshots/${iso}.json`);
+const stripKoact=(n)=>(n||"").replace(/^KoAct\s*/,"");
 
-let DATES=[];
+let ETFS=[], curEtf=null, DATES=[];
+
+function setTitle(etf){
+  $("#etfTitle").innerHTML=`${stripKoact(etf.name)}<span class="code num">${etf.ticker}</span>`;
+}
+
+function showEmpty(){
+  $("#date").innerHTML=""; $("#base").innerHTML="";
+  $("#ctx").innerHTML=`<b>${stripKoact(curEtf.name)}</b> <span class="vs">· 아직 수집된 데이터가 없어요</span>`;
+  $("#band").innerHTML=""; $("#changeLists").innerHTML="";
+  $("#table").innerHTML=`<div style="padding:26px 16px;color:var(--muted);text-align:center;font-size:13px;line-height:1.7">이 ETF는 아직 데이터가 없습니다.<br>GitHub 저장소의 <b>Actions → Run workflow</b>를 한 번 실행하면 채워집니다.</div>`;
+}
+
 async function recompute(){
-  const cur=$("#date").value;
-  const base=$("#base").value;
-  const snap=await snapshotOf(cur);
+  if(!DATES.length) return;
+  const cur=$("#date").value, base=$("#base").value;
+  const snap=await snapshotOf(curEtf.slug,cur);
   let prev=null, baseDate=null;
   if(base && base!==cur){
-    try{ prev=(await snapshotOf(base)).holdings; baseDate=base; }catch(e){}
+    try{ prev=(await snapshotOf(curEtf.slug,base)).holdings; baseDate=base; }catch(e){}
   }
   render(snap,baseDate,computeDiff(snap.holdings,prev));
 }
 
+async function selectEtf(slug){
+  curEtf=ETFS.find(e=>e.slug===slug)||ETFS[0];
+  setTitle(curEtf);
+  try{
+    DATES=await jget(`./data/${curEtf.slug}/dates.json`);
+    if(!DATES.length) throw new Error("empty");
+  }catch(e){ DATES=[]; showEmpty(); return; }
+  const opts=DATES.slice().reverse().map(d=>`<option value="${d}">${fmtDate(d)}</option>`).join("");
+  $("#date").innerHTML=opts;
+  $("#base").innerHTML=`<option value="">— 비교 안 함 —</option>`+opts;
+  $("#date").value=DATES[DATES.length-1];
+  $("#base").value=DATES.length>1?DATES[DATES.length-2]:"";
+  await recompute();
+}
+
 async function init(){
   try{
-    DATES=await jget("./data/dates.json");
-    if(!DATES.length) throw new Error("empty");
-    const opts=DATES.slice().reverse().map(d=>`<option value="${d}">${fmtDate(d)}</option>`).join("");
-    $("#date").innerHTML=opts;
-    $("#base").innerHTML=`<option value="">— 비교 안 함 —</option>`+opts;
-    $("#date").value=DATES[DATES.length-1];
-    $("#base").value=DATES.length>1?DATES[DATES.length-2]:"";
+    ETFS=await jget("./data/etfs.json");
+    if(!ETFS.length) throw new Error("empty");
+    $("#etf").innerHTML=ETFS.map(e=>`<option value="${e.slug}">${stripKoact(e.name)}</option>`).join("");
+    $("#etf").onchange=()=>selectEtf($("#etf").value);
     $("#date").onchange=recompute;
     $("#base").onchange=recompute;
-    await recompute();
+    await selectEtf(ETFS[0].slug);
   }catch(e){ loadDemo(); }
 }
 
@@ -322,6 +350,8 @@ function loadDemo(){
     cash("설정현금액",1219815837),
     cash("원화현금",23610653),
   ];
+  $("#etf").innerHTML=`<option>미국나스닥성장기업액티브</option><option>코리아밸류업액티브</option>`;
+  setTitle({name:"KoAct 미국나스닥성장기업액티브",ticker:"0015B0"});
   $("#date").innerHTML=`<option>2026.06.26 (데모)</option><option>2026.06.25 (데모)</option>`;
   $("#base").innerHTML=`<option>2026.06.25 (데모)</option><option value="">— 비교 안 함 —</option>`;
   render({date:"2026-06-26",holdings:cur},"2026-06-25",computeDiff(cur,prev));
