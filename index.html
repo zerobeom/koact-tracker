@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KoAct 미국나스닥성장기업액티브 · 구성종목 변동 추적</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root{
+    --bg:#0E1422; --panel:#151D2C; --panel2:#1B2536; --line:#26314A;
+    --text:#E8ECF4; --muted:#8B96AC; --faint:#5C6982;
+    --in:#35D6A4; --out:#FF6B7A; --gold:#D8B454;
+    --in-dim:rgba(53,214,164,.14); --out-dim:rgba(255,107,122,.14);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Pretendard Variable",Pretendard,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1,"cv01" 1;}
+  body{line-height:1.5}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+  a{color:inherit}
+  .wrap{max-width:940px;margin:0 auto;padding:28px 20px 80px}
+
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 24px;
+    padding-bottom:22px;border-bottom:1px solid var(--line)}
+  .brand{display:flex;flex-direction:column;gap:4px}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  h1{margin:0;font-size:25px;font-weight:800;letter-spacing:-.01em}
+  .code{color:var(--muted);font-weight:600;font-size:15px;margin-left:8px}
+  .datepick{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .datepick label{font-size:12px;color:var(--faint);letter-spacing:.04em}
+  select{appearance:none;background:var(--panel2);color:var(--text);
+    border:1px solid var(--line);border-radius:10px;padding:9px 34px 9px 13px;
+    font:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%238B96AC' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center}
+  select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+  .ctx{margin-top:14px;font-size:13px;color:var(--muted)}
+  .ctx b{color:var(--text);font-weight:700}
+  .ctx .vs{color:var(--faint)}
+
+  .band{margin-top:24px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px}
+  .stat .k{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:7px}
+  .stat .dot{width:7px;height:7px;border-radius:50%}
+  .stat .v{font-size:30px;font-weight:800;margin-top:8px;letter-spacing:-.02em}
+  .stat.in .v{color:var(--in)} .stat.in .dot{background:var(--in)}
+  .stat.out .v{color:var(--out)} .stat.out .dot{background:var(--out)}
+  .stat.up .v{color:var(--in)} .stat.up .dot{background:var(--in);box-shadow:0 0 0 3px var(--in-dim)}
+  .stat.down .v{color:var(--out)} .stat.down .dot{background:var(--out);box-shadow:0 0 0 3px var(--out-dim)}
+  .stat .sub{font-size:11px;color:var(--faint);margin-top:2px}
+
+  .changes{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .clist{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .clist h3{margin:0 0 10px;font-size:12px;letter-spacing:.04em;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:7px}
+  .clist h3 .tag{font-size:11px;padding:1px 7px;border-radius:20px;font-weight:800}
+  .tag.in{background:var(--in-dim);color:var(--in)} .tag.out{background:var(--out-dim);color:var(--out)}
+  .clist ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+  .clist li{display:flex;align-items:baseline;gap:9px;font-size:13px}
+  .clist li .tk{font-size:11px;font-weight:800;color:var(--faint);min-width:42px;flex-shrink:0}
+  .clist li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .clist li .w{color:var(--muted);font-weight:600}
+  .clist li .d{font-weight:700;font-size:12px}
+  .d.pos{color:var(--in)} .d.neg{color:var(--out)}
+  .empty{color:var(--faint);font-size:13px}
+
+  .tablehead{margin:30px 0 12px;display:flex;align-items:baseline;justify-content:space-between}
+  .tablehead h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .tablehead .count{font-size:13px;color:var(--muted)}
+  .table{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+  .row{display:grid;grid-template-columns:30px 58px 1fr 104px 130px;align-items:center;gap:12px;
+    padding:11px 16px;border-bottom:1px solid var(--line);position:relative}
+  .row:last-child{border-bottom:0}
+  .row.head{background:var(--panel2);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--faint);font-weight:700;padding:9px 16px}
+  .row .stripe{position:absolute;left:0;top:0;bottom:0;width:3px}
+  .row.is-new .stripe{background:var(--in)}
+  .row.is-up .stripe{background:var(--in);opacity:.55}
+  .row.is-down .stripe{background:var(--out);opacity:.55}
+  .row.is-cash{opacity:.5}
+  .r-rank{color:var(--faint);font-size:12px;font-weight:600;text-align:right}
+  .r-tk{font-size:12px;font-weight:800;color:var(--text)}
+  .r-name{display:flex;align-items:center;gap:8px;min-width:0}
+  .r-name .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--muted);font-size:13px}
+  .badge{font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;letter-spacing:.02em;flex-shrink:0}
+  .badge.new{background:var(--in-dim);color:var(--in)}
+  .badge.up{background:var(--in-dim);color:var(--in)}
+  .badge.down{background:var(--out-dim);color:var(--out)}
+  .r-w{text-align:right;font-weight:700}
+  .r-w .delta{display:block;font-size:11px;font-weight:600;margin-top:1px}
+  .r-bar{height:6px;border-radius:4px;background:var(--panel2);overflow:hidden}
+  .r-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),#E9CE86)}
+  .row.is-new .r-bar i{background:linear-gradient(90deg,var(--in),#7BE9C6)}
+
+  footer{margin-top:34px;font-size:12px;color:var(--faint);line-height:1.7}
+  .demo-banner{margin-top:22px;background:var(--out-dim);border:1px solid rgba(255,107,122,.3);
+    color:#FFC2C9;border-radius:12px;padding:11px 15px;font-size:13px;display:none}
+  .demo-banner.show{display:block}
+  .demo-banner b{color:#fff}
+
+  @media (max-width:680px){
+    .band{grid-template-columns:1fr 1fr}
+    .changes{grid-template-columns:1fr}
+    .row{grid-template-columns:24px 52px 1fr 84px}
+    .row .r-bar{display:none}
+    h1{font-size:21px}
+    .datepick{margin-left:0;width:100%}
+    header{align-items:flex-start}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="eyebrow">KoAct · 일별 구성종목 추적</span>
+      <h1>미국나스닥성장기업액티브<span class="code num">0015B0</span></h1>
+    </div>
+    <div class="datepick">
+      <label for="date">기준일</label>
+      <select id="date" aria-label="기준일 선택"></select>
+    </div>
+  </header>
+
+  <div class="demo-banner" id="demoBanner">
+    <b>데모 데이터입니다.</b> 실제 데이터가 아직 없어요 — 저장소에서 <b>Actions → Run workflow</b>를 한 번 실행하면 진짜 구성종목으로 채워집니다.
+  </div>
+
+  <p class="ctx" id="ctx"></p>
+  <section class="band" id="band"></section>
+  <section class="changes" id="changeLists"></section>
+
+  <div class="tablehead">
+    <h2>전체 구성종목</h2>
+    <span class="count num" id="count"></span>
+  </div>
+  <div class="table" id="table"></div>
+
+  <footer>
+    데이터 출처: 삼성액티브자산운용 투자종목정보(PDF) · 매 영업일 자동 갱신.<br>
+    구성종목은 PDF(설정·환매 기준 바스켓)에 기초하며 실제 보유내역과 다를 수 있고, 시장 상황에 따라 변동됩니다.
+    본 페이지는 정보 제공용이며 투자 권유가 아닙니다.
+  </footer>
+</div>
+
+<script>
+const EPS=0.05;
+const $=(s)=>document.querySelector(s);
+const keyOf=(h)=>h.key||h.isin||h.code||h.name;
+
+const fmtDate=(iso)=>{ if(!iso) return "—"; const [y,m,d]=iso.split("-"); return `${y}.${m}.${d}`; };
+const pct=(v)=> v==null?"—":v.toFixed(2)+"%";
+const signed=(v)=>(v>0?"+":"")+v.toFixed(2)+"%p";
+
+function computeDiff(cur,prev){
+  if(!prev||!prev.length){ return {added:[],removed:[],increased:[],decreased:[],changeOf:new Map()}; }
+  const stock=(arr)=>(arr||[]).filter(h=>!h.is_cash);
+  const pmap=new Map(stock(prev).map(h=>[keyOf(h),h]));
+  const cmap=new Map(stock(cur).map(h=>[keyOf(h),h]));
+  const added=[],removed=[],increased=[],decreased=[];
+  for(const [k,h] of cmap){
+    if(!pmap.has(k)){ added.push({name:h.name,ticker:h.ticker,weight:h.weight}); continue; }
+    const cw=h.weight||0, pw=pmap.get(k).weight||0, dlt=+(cw-pw).toFixed(4);
+    if(dlt>=EPS) increased.push({name:h.name,ticker:h.ticker,weight:cw,prev_weight:pw,delta:dlt});
+    else if(dlt<=-EPS) decreased.push({name:h.name,ticker:h.ticker,weight:cw,prev_weight:pw,delta:dlt});
+  }
+  for(const [k,h] of pmap) if(!cmap.has(k)) removed.push({name:h.name,ticker:h.ticker,weight:h.weight});
+  added.sort((a,b)=>(b.weight||0)-(a.weight||0));
+  removed.sort((a,b)=>(b.weight||0)-(a.weight||0));
+  increased.sort((a,b)=>b.delta-a.delta);
+  decreased.sort((a,b)=>a.delta-b.delta);
+  const changeOf=new Map();
+  added.forEach(x=>changeOf.set(x.ticker||x.name,{type:"new"}));
+  increased.forEach(x=>changeOf.set(x.ticker||x.name,{type:"up",delta:x.delta}));
+  decreased.forEach(x=>changeOf.set(x.ticker||x.name,{type:"down",delta:x.delta}));
+  return {added,removed,increased,decreased,changeOf};
+}
+
+function renderBand(c){
+  const cells=[
+    {cls:"in",k:"편입",v:c.added.length,sub:"신규 종목"},
+    {cls:"out",k:"편출",v:c.removed.length,sub:"제외 종목"},
+    {cls:"up",k:"비중 증가",v:c.increased.length,sub:`+${EPS}%p 이상`},
+    {cls:"down",k:"비중 감소",v:c.decreased.length,sub:`-${EPS}%p 이상`},
+  ];
+  $("#band").innerHTML=cells.map(s=>`
+    <div class="stat ${s.cls}"><div class="k"><span class="dot"></span>${s.k}</div>
+    <div class="v num">${s.v}</div><div class="sub">${s.sub}</div></div>`).join("");
+}
+
+function liItem(x,withDelta){
+  const tk=x.ticker?`<span class="tk">${x.ticker}</span>`:`<span class="tk"></span>`;
+  if(!withDelta) return `<li>${tk}<span class="nm">${x.name}</span><span class="w num">${pct(x.weight)}</span></li>`;
+  const cls=x.delta>0?"pos":"neg";
+  return `<li>${tk}<span class="nm">${x.name}</span><span class="w num">${pct(x.weight)}</span><span class="d ${cls} num">${signed(x.delta)}</span></li>`;
+}
+function clist(title,tagcls,items,withDelta){
+  const body=items.length?`<ul>${items.map(x=>liItem(x,withDelta)).join("")}</ul>`:`<div class="empty">변동 없음</div>`;
+  return `<div class="clist"><h3>${title}<span class="tag ${tagcls}">${items.length}</span></h3>${body}</div>`;
+}
+function renderChangeLists(c){
+  $("#changeLists").innerHTML=
+    clist("편입","in",c.added,false)+clist("편출","out",c.removed,false)+
+    clist("비중 증가","in",c.increased,true)+clist("비중 감소","out",c.decreased,true);
+}
+
+function renderTable(holdings,c){
+  const stocks=holdings.filter(h=>h.weight!=null);
+  const max=Math.max(1,...stocks.filter(h=>!h.is_cash).map(h=>h.weight||0));
+  const head=`<div class="row head"><span>#</span><span>티커</span><span>종목명</span><span class="r-w">비중</span><span class="r-bar"></span></div>`;
+  const rows=holdings.map((h,i)=>{
+    const ch=c.changeOf.get(h.ticker||h.name);
+    let st="",badge="",delta="";
+    if(!h.is_cash){
+      if(ch?.type==="new"){ st="is-new"; badge=`<span class="badge new">NEW</span>`; }
+      else if(ch?.type==="up"){ st="is-up"; badge=`<span class="badge up">▲</span>`; delta=`<span class="delta d pos num">${signed(ch.delta)}</span>`; }
+      else if(ch?.type==="down"){ st="is-down"; badge=`<span class="badge down">▼</span>`; delta=`<span class="delta d neg num">${signed(ch.delta)}</span>`; }
+    } else st="is-cash";
+    const w=(h.weight||0)/max*100;
+    return `<div class="row ${st}"><span class="stripe"></span>
+      <span class="r-rank num">${i+1}</span>
+      <span class="r-tk num">${h.ticker||""}</span>
+      <span class="r-name">${badge}<span class="t">${h.name}</span></span>
+      <span class="r-w num">${pct(h.weight)}${delta}</span>
+      <span class="r-bar"><i style="width:${Math.max(0,w).toFixed(1)}%"></i></span></div>`;
+  }).join("");
+  $("#table").innerHTML=head+rows;
+  const n=holdings.filter(h=>!h.is_cash).length;
+  $("#count").textContent=`${n}종목`;
+}
+
+function render(snapshot,prevDate,changes){
+  $("#ctx").innerHTML=prevDate
+    ? `<b>${fmtDate(snapshot.date)}</b> 구성 <span class="vs">·</span> 직전 영업일 <b>${fmtDate(prevDate)}</b> 대비 변동`
+    : `<b>${fmtDate(snapshot.date)}</b> 구성 <span class="vs">· 비교할 이전 데이터 없음</span>`;
+  renderBand(changes); renderChangeLists(changes); renderTable(snapshot.holdings,changes);
+}
+
+async function jget(url){ const r=await fetch(url,{cache:"no-store"}); if(!r.ok) throw new Error(url); return r.json(); }
+const snapshotOf=(iso)=>jget(`./data/snapshots/${iso}.json`);
+
+async function selectDate(iso,dates){
+  const snap=await snapshotOf(iso);
+  const idx=dates.indexOf(iso), prevDate=idx>0?dates[idx-1]:null;
+  let prev=null;
+  if(prevDate){ try{ prev=(await snapshotOf(prevDate)).holdings; }catch(e){} }
+  render(snap,prevDate,computeDiff(snap.holdings,prev));
+}
+
+async function init(){
+  try{
+    const dates=await jget("./data/dates.json");
+    if(!dates.length) throw new Error("empty");
+    const sel=$("#date");
+    sel.innerHTML=dates.slice().reverse().map(d=>`<option value="${d}">${fmtDate(d)}</option>`).join("");
+    sel.onchange=()=>selectDate(sel.value,dates);
+    await selectDate(dates[dates.length-1],dates);
+  }catch(e){ loadDemo(); }
+}
+
+function loadDemo(){
+  $("#demoBanner").classList.add("show");
+  const mk=(isin,ticker,name,weight)=>({isin,ticker,name,code:ticker+" US Equity",weight,is_cash:false,key:isin});
+  const prev=[
+    mk("US5951121038","MU","MICRON TECH",5.5),
+    mk("US0079031078","AMD","ADVANCED MICRO DEVICES",6.8),
+    mk("US4581401001","INTC","INTEL Corp",6.4),
+    mk("US0937121079","BE","BLOOM ENERGY CORPORATION",5.8),
+    mk("US67066G1040","NVDA","NVIDIA Corp",6.4),
+    mk("US02079K3059","GOOGL","ALPHABET INC-CL A",4.2),
+    mk("US0378331005","AAPL","APPLE Inc",2.7),
+    mk("US88160R1014","TSLA","TESLA MOTORS",2.0),
+    mk("OLD0000000001","HOOD","Robinhood Markets Inc",1.1),
+  ];
+  const cur=[
+    mk("US5951121038","MU","MICRON TECH",7.0),
+    mk("US0079031078","AMD","ADVANCED MICRO DEVICES",6.8),
+    mk("US4581401001","INTC","INTEL Corp",6.4),
+    mk("US0937121079","BE","BLOOM ENERGY CORPORATION",5.8),
+    mk("US67066G1040","NVDA","NVIDIA Corp",4.4),
+    mk("US02079K3059","GOOGL","ALPHABET INC-CL A",4.2),
+    mk("US0378331005","AAPL","APPLE Inc",2.7),
+    mk("US84615Q1031","SPCX","Space Exploration Technologies",2.4),
+    mk("US5949181045","MSFT","MICROSOFT",2.0),
+  ];
+  $("#date").innerHTML=`<option>2026.06.26 (데모)</option><option>2026.06.25 (데모)</option>`;
+  render({date:"2026-06-26",holdings:cur},"2026-06-25",computeDiff(cur,prev));
+}
+
+init();
+</script>
+</body>
+</html>
