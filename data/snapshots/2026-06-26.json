@@ -11,7 +11,7 @@
       "code": "MU US Equity",
       "ticker": "MU",
       "weight": 6.9964,
-      "shares": 51.74,
+      "shares": 52,
       "amount": 83691332.0,
       "is_cash": false,
       "key": "US5951121038"
@@ -22,7 +22,7 @@
       "code": "AMD US Equity",
       "ticker": "AMD",
       "weight": 6.7927,
-      "shares": 101.34,
+      "shares": 101,
       "amount": 81254705.0,
       "is_cash": false,
       "key": "US0079031078"
@@ -33,7 +33,7 @@
       "code": "INTC US Equity",
       "ticker": "INTC",
       "weight": 6.4329,
-      "shares": 378.89,
+      "shares": 379,
       "amount": 76951215.0,
       "is_cash": false,
       "key": "US4581401001"
@@ -44,7 +44,7 @@
       "code": "SNDK US Equity",
       "ticker": "SNDK",
       "weight": 6.1355,
-      "shares": 24.85,
+      "shares": 25,
       "amount": 73392920.0,
       "is_cash": false,
       "key": "US80004C2008"
@@ -55,7 +55,7 @@
       "code": "BE US Equity",
       "ticker": "BE",
       "weight": 5.7843,
-      "shares": 137.5,
+      "shares": 138,
       "amount": 69191830.0,
       "is_cash": false,
       "key": "US0937121079"
@@ -66,7 +66,7 @@
       "code": "ARM US Equity",
       "ticker": "ARM",
       "weight": 5.6303,
-      "shares": 121.58,
+      "shares": 122,
       "amount": 67349571.0,
       "is_cash": false,
       "key": "US0420682058"
@@ -77,7 +77,7 @@
       "code": "NVDA US Equity",
       "ticker": "NVDA",
       "weight": 4.4173,
-      "shares": 172.12,
+      "shares": 172,
       "amount": 52840375.0,
       "is_cash": false,
       "key": "US67066G1040"
@@ -88,7 +88,7 @@
       "code": "GOOGL US Equity",
       "ticker": "GOOGL",
       "weight": 4.2211,
-      "shares": 94.79,
+      "shares": 95,
       "amount": 50492631.0,
       "is_cash": false,
       "key": "US02079K3059"
@@ -99,7 +99,7 @@
       "code": "LRCX US Equity",
       "ticker": "LRCX",
       "weight": 4.0907,
-      "shares": 84.63,
+      "shares": 85,
       "amount": 48933401.0,
       "is_cash": false,
       "key": "US5128073062"
@@ -110,7 +110,7 @@
       "code": "DELL US Equity",
       "ticker": "DELL",
       "weight": 3.7327,
-      "shares": 66.68,
+      "shares": 67,
       "amount": 44650552.0,
       "is_cash": false,
       "key": "US24703L2025"
@@ -121,7 +121,7 @@
       "code": "WDC US Equity",
       "ticker": "WDC",
       "weight": 3.685,
-      "shares": 44.38,
+      "shares": 44,
       "amount": 44079837.0,
       "is_cash": false,
       "key": "US9581021055"
@@ -132,7 +132,7 @@
       "code": "STX US Equity",
       "ticker": "STX",
       "weight": 3.506,
-      "shares": 27.37,
+      "shares": 27,
       "amount": 41938689.0,
       "is_cash": false,
       "key": "IE00BKVD2N49"
@@ -143,7 +143,7 @@
       "code": "AMZN US Equity",
       "ticker": "AMZN",
       "weight": 3.3884,
-      "shares": 112.15,
+      "shares": 112,
       "amount": 40531944.0,
       "is_cash": false,
       "key": "US0231351067"
@@ -154,7 +154,7 @@
       "code": "MRVL US Equity",
       "ticker": "MRVL",
       "weight": 3.0361,
-      "shares": 85.08,
+      "shares": 85,
       "amount": 36317681.0,
       "is_cash": false,
       "key": "US5738741041"
@@ -165,7 +165,7 @@
       "code": "AAPL US Equity",
       "ticker": "AAPL",
       "weight": 2.7002,
-      "shares": 71.44,
+      "shares": 71,
       "amount": 32300489.0,
       "is_cash": false,
       "key": "US0378331005"
@@ -176,7 +176,7 @@
       "code": "SPCX US Equity",
       "ticker": "SPCX",
       "weight": 2.3853,
-      "shares": 119.68,
+      "shares": 120,
       "amount": 28532772.0,
       "is_cash": false,
       "key": "US84615Q1031"
@@ -187,7 +187,7 @@
       "code": "AMAT US Equity",
       "ticker": "AMAT",
       "weight": 2.3782,
-      "shares": 31.31,
+      "shares": 31,
       "amount": 28448391.0,
       "is_cash": false,
       "key": "US0382221051"
@@ -198,7 +198,7 @@
       "code": "NBIS US Equity",
       "ticker": "NBIS",
       "weight": 2.1358,
-      "shares": 63.78,
+      "shares": 64,
       "amount": 25548831.0,
       "is_cash": false,
       "key": "NL0009805522"
@@ -209,7 +209,7 @@
       "code": "MSFT US Equity",
       "ticker": "MSFT",
       "weight": 2.0182,
-      "shares": 42.82,
+      "shares": 43,
       "amount": 24141707.0,
       "is_cash": false,
       "key": "US5949181045"
@@ -220,7 +220,7 @@
       "code": "TSLA US Equity",
       "ticker": "TSLA",
       "weight": 2.0094,
-      "shares": 41.49,
+      "shares": 41,
       "amount": 24036407.0,
       "is_cash": false,
       "key": "US88160R1014"
@@ -231,7 +231,7 @@
       "code": "LITE US Equity",
       "ticker": "LITE",
       "weight": 1.4897,
-      "shares": 13.71,
+      "shares": 14,
       "amount": 17819860.0,
       "is_cash": false,
       "key": "US55024U1097"
@@ -242,7 +242,7 @@
       "code": "ASML US Equity",
       "ticker": "ASML",
       "weight": 1.3072,
-      "shares": 5.75,
+      "shares": 6,
       "amount": 15636695.0,
       "is_cash": false,
       "key": "USN070592100"
@@ -253,7 +253,7 @@
       "code": "TER US Equity",
       "ticker": "TER",
       "weight": 1.227,
-      "shares": 22.27,
+      "shares": 22,
       "amount": 14676852.0,
       "is_cash": false,
       "key": "US8807701029"
@@ -264,7 +264,7 @@
       "code": "SNOW US Equity",
       "ticker": "SNOW",
       "weight": 1.1732,
-      "shares": 40.26,
+      "shares": 40,
       "amount": 14033551.0,
       "is_cash": false,
       "key": "US8334451098"
@@ -275,7 +275,7 @@
       "code": "SIMO US Equity",
       "ticker": "SIMO",
       "weight": 1.1163,
-      "shares": 26.91,
+      "shares": 27,
       "amount": 13353411.0,
       "is_cash": false,
       "key": "US82706C1080"
@@ -286,7 +286,7 @@
       "code": "HOOD US Equity",
       "ticker": "HOOD",
       "weight": 1.0568,
-      "shares": 84.31,
+      "shares": 84,
       "amount": 12641020.0,
       "is_cash": false,
       "key": "US7707001027"
@@ -297,7 +297,7 @@
       "code": "KLAC US Equity",
       "ticker": "KLAC",
       "weight": 1.0414,
-      "shares": 33.58,
+      "shares": 34,
       "amount": 12457793.0,
       "is_cash": false,
       "key": "US4824801009"
@@ -308,7 +308,7 @@
       "code": "CSCO US Equity",
       "ticker": "CSCO",
       "weight": 0.9572,
-      "shares": 61.99,
+      "shares": 62,
       "amount": 11450016.0,
       "is_cash": false,
       "key": "US17275R1023"
@@ -319,7 +319,7 @@
       "code": "AVGO US Equity",
       "ticker": "AVGO",
       "weight": 0.8382,
-      "shares": 17.01,
+      "shares": 17,
       "amount": 10026023.0,
       "is_cash": false,
       "key": "US11135F1012"
@@ -330,7 +330,7 @@
       "code": "TXN US Equity",
       "ticker": "TXN",
       "weight": 0.6262,
-      "shares": 16.02,
+      "shares": 16,
       "amount": 7491076.0,
       "is_cash": false,
       "key": "US8825081040"
@@ -341,7 +341,7 @@
       "code": "PLTR US Equity",
       "ticker": "PLTR",
       "weight": 0.5515,
-      "shares": 37.68,
+      "shares": 38,
       "amount": 6597634.0,
       "is_cash": false,
       "key": "US69608A1088"
@@ -352,7 +352,7 @@
       "code": "PANW US Equity",
       "ticker": "PANW",
       "weight": 0.5434,
-      "shares": 14.77,
+      "shares": 15,
       "amount": 6499842.0,
       "is_cash": false,
       "key": "US6974351057"
@@ -363,7 +363,7 @@
       "code": "CRDO US Equity",
       "ticker": "CRDO",
       "weight": 0.5429,
-      "shares": 15.65,
+      "shares": 16,
       "amount": 6494294.0,
       "is_cash": false,
       "key": "KYG254571055"
@@ -374,7 +374,7 @@
       "code": "VRT US Equity",
       "ticker": "VRT",
       "weight": 0.4934,
-      "shares": 12.09,
+      "shares": 12,
       "amount": 5901812.0,
       "is_cash": false,
       "key": "US92537N1081"
@@ -385,7 +385,7 @@
       "code": "QCOM US Equity",
       "ticker": "QCOM",
       "weight": 0.4791,
-      "shares": 18.82,
+      "shares": 19,
       "amount": 5731525.0,
       "is_cash": false,
       "key": "US7475251036"
@@ -396,7 +396,7 @@
       "code": "CRCL US Equity",
       "ticker": "CRCL",
       "weight": 0.4747,
-      "shares": 51.86,
+      "shares": 52,
       "amount": 5678713.0,
       "is_cash": false,
       "key": "US1725731079"
@@ -407,7 +407,7 @@
       "code": "TSEM US Equity",
       "ticker": "TSEM",
       "weight": 0.4676,
-      "shares": 13.17,
+      "shares": 13,
       "amount": 5593775.0,
       "is_cash": false,
       "key": "IL0010823792"
@@ -418,7 +418,7 @@
       "code": "COIN US Equity",
       "ticker": "COIN",
       "weight": 0.4656,
-      "shares": 24.05,
+      "shares": 24,
       "amount": 5569371.0,
       "is_cash": false,
       "key": "US19260Q1076"
@@ -429,7 +429,7 @@
       "code": "ADI US Equity",
       "ticker": "ADI",
       "weight": 0.4561,
-      "shares": 8.56,
+      "shares": 9,
       "amount": 5455989.0,
       "is_cash": false,
       "key": "US0326541051"
@@ -440,7 +440,7 @@
       "code": "RKLB US Equity",
       "ticker": "RKLB",
       "weight": 0.4388,
-      "shares": 39.84,
+      "shares": 40,
       "amount": 5249398.0,
       "is_cash": false,
       "key": "US7731211089"
@@ -451,7 +451,7 @@
       "code": "CRWD US Equity",
       "ticker": "CRWD",
       "weight": 0.4262,
-      "shares": 4.91,
+      "shares": 5,
       "amount": 5097895.0,
       "is_cash": false,
       "key": "US22788C1053"
@@ -462,7 +462,7 @@
       "code": "CIEN US Equity",
       "ticker": "CIEN",
       "weight": 0.2977,
-      "shares": 4.98,
+      "shares": 5,
       "amount": 3560983.0,
       "is_cash": false,
       "key": "US1717793095"
@@ -473,7 +473,7 @@
       "code": "FTNT US Equity",
       "ticker": "FTNT",
       "weight": 0.284,
-      "shares": 15.16,
+      "shares": 15,
       "amount": 3397711.0,
       "is_cash": false,
       "key": "US34959E1091"
@@ -484,7 +484,7 @@
       "code": "GILD US Equity",
       "ticker": "GILD",
       "weight": 0.2834,
-      "shares": 17.56,
+      "shares": 18,
       "amount": 3390560.0,
       "is_cash": false,
       "key": "US3755581036"
@@ -495,7 +495,7 @@
       "code": "COHR US Equity",
       "ticker": "COHR",
       "weight": 0.2136,
-      "shares": 4.22,
+      "shares": 4,
       "amount": 2555251.0,
       "is_cash": false,
       "key": "US19247G1076"
@@ -506,7 +506,7 @@
       "code": "ALAB US Equity",
       "ticker": "ALAB",
       "weight": 0.1939,
-      "shares": 3.76,
+      "shares": 4,
       "amount": 2319756.0,
       "is_cash": false,
       "key": "US04626A1034"
@@ -517,7 +517,7 @@
       "code": "DDOG US Equity",
       "ticker": "DDOG",
       "weight": 0.1869,
-      "shares": 6.51,
+      "shares": 7,
       "amount": 2236068.0,
       "is_cash": false,
       "key": "US23804L1035"
@@ -528,7 +528,7 @@
       "code": "MPWR US Equity",
       "ticker": "MPWR",
       "weight": 0.1758,
-      "shares": 0.95,
+      "shares": 1,
       "amount": 2103012.0,
       "is_cash": false,
       "key": "US6098391054"
@@ -539,7 +539,7 @@
       "code": "NXPI US Equity",
       "ticker": "NXPI",
       "weight": 0.1441,
-      "shares": 3.8,
+      "shares": 4,
       "amount": 1723856.0,
       "is_cash": false,
       "key": "NL0009538784"
@@ -550,7 +550,7 @@
       "code": "GFS US Equity",
       "ticker": "GFS",
       "weight": 0.1117,
-      "shares": 10.35,
+      "shares": 10,
       "amount": 1336433.0,
       "is_cash": false,
       "key": "KYG393871085"
@@ -561,7 +561,7 @@
       "code": "FLEX US Equity",
       "ticker": "FLEX",
       "weight": 0.111,
-      "shares": 5.71,
+      "shares": 6,
       "amount": 1327664.0,
       "is_cash": false,
       "key": "SG9999000020"
@@ -572,7 +572,7 @@
       "code": "MCHP US Equity",
       "ticker": "MCHP",
       "weight": 0.1021,
-      "shares": 8.56,
+      "shares": 9,
       "amount": 1221245.0,
       "is_cash": false,
       "key": "US5950171042"
@@ -583,7 +583,7 @@
       "code": "ON US Equity",
       "ticker": "ON",
       "weight": 0.0982,
-      "shares": 6.58,
+      "shares": 7,
       "amount": 1174872.0,
       "is_cash": false,
       "key": "US6821891057"
@@ -594,7 +594,7 @@
       "code": "CRWV US Equity",
       "ticker": "CRWV",
       "weight": 0.0866,
-      "shares": 6.66,
+      "shares": 7,
       "amount": 1036479.0,
       "is_cash": false,
       "key": "US21873S1087"
@@ -605,7 +605,7 @@
       "code": "FSLR US Equity",
       "ticker": "FSLR",
       "weight": 0.0618,
-      "shares": 1.93,
+      "shares": 2,
       "amount": 739469.0,
       "is_cash": false,
       "key": "US3364331070"
@@ -616,7 +616,7 @@
       "code": "CASH00000001",
       "ticker": "",
       "weight": 0.0,
-      "shares": 1219815837.0,
+      "shares": 1219815837,
       "amount": 1219815837.0,
       "is_cash": true,
       "key": "CASH00000001"
@@ -627,7 +627,7 @@
       "code": "KRD010010001",
       "ticker": "",
       "weight": 0.0,
-      "shares": 23610653.0,
+      "shares": 23610653,
       "amount": 23610653.0,
       "is_cash": true,
       "key": "KRD010010001"
