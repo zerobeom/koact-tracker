@@ -2,4 +2,4 @@ requests>=2.31
 pandas>=2.0
 xlrd>=2.0.1
 lxml>=4.9
-pykrx>=1.0.45
+finance-datareader>=0.9.96
