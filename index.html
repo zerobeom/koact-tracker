@@ -8,10 +8,11 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <style>
   :root{
-    --bg:#0E1422; --panel:#151D2C; --panel2:#1B2536; --line:#26314A;
-    --text:#E8ECF4; --muted:#8B96AC; --faint:#5C6982;
-    --in:#35D6A4; --out:#FF6B7A; --gold:#D8B454;
-    --in-dim:rgba(53,214,164,.14); --out-dim:rgba(255,107,122,.14);
+    --bg:#FFFFFF; --panel:#FFFFFF; --panel2:#F5F7F9; --line:#E4E8ED;
+    --text:#16191F; --muted:#5B6573; --faint:#98A1AD;
+    --in:#0E9E6E; --out:#DC2A2A; --accent:#1F2937;
+    --in-dim:#E6F6EF; --out-dim:#FBE9E9;
+    --bar1:#8893A6; --bar2:#AEB7C6;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--text);
@@ -24,17 +25,17 @@
   header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 24px;
     padding-bottom:22px;border-bottom:1px solid var(--line)}
   .brand{display:flex;flex-direction:column;gap:4px}
-  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700}
   h1{margin:0;font-size:25px;font-weight:800;letter-spacing:-.01em}
-  .code{color:var(--muted);font-weight:600;font-size:15px;margin-left:8px}
+  .code{color:var(--faint);font-weight:600;font-size:15px;margin-left:8px}
   .datepick{margin-left:auto;display:flex;align-items:center;gap:10px}
   .datepick label{font-size:12px;color:var(--faint);letter-spacing:.04em}
-  select{appearance:none;background:var(--panel2);color:var(--text);
+  select{appearance:none;background:#fff;color:var(--text);
     border:1px solid var(--line);border-radius:10px;padding:9px 34px 9px 13px;
     font:inherit;font-size:14px;font-weight:600;cursor:pointer;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%238B96AC' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%235B6573' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
     background-repeat:no-repeat;background-position:right 12px center}
-  select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
   .ctx{margin-top:14px;font-size:13px;color:var(--muted)}
   .ctx b{color:var(--text);font-weight:700}
@@ -46,11 +47,11 @@
   .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px}
   .stat .k{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:7px}
   .stat .dot{width:7px;height:7px;border-radius:50%}
-  .stat .v{font-size:30px;font-weight:800;margin-top:8px;letter-spacing:-.02em}
+  .stat .v{font-size:30px;font-weight:800;margin-top:8px;letter-spacing:-.02em;color:var(--text)}
   .stat.in .v{color:var(--in)} .stat.in .dot{background:var(--in)}
   .stat.out .v{color:var(--out)} .stat.out .dot{background:var(--out)}
-  .stat.buy .v{color:var(--in)} .stat.buy .dot{background:var(--in);box-shadow:0 0 0 3px var(--in-dim)}
-  .stat.sell .v{color:var(--out)} .stat.sell .dot{background:var(--out);box-shadow:0 0 0 3px var(--out-dim)}
+  .stat.buy .v{color:var(--in)} .stat.buy .dot{background:var(--in)}
+  .stat.sell .v{color:var(--out)} .stat.sell .dot{background:var(--out)}
   .stat .sub{font-size:11px;color:var(--faint);margin-top:2px}
 
   .changes{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -71,7 +72,7 @@
   .tablehead h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em}
   .tablehead .count{font-size:13px;color:var(--muted)}
   .table{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
-  .row{display:grid;grid-template-columns:28px 54px 1fr 120px 88px 96px;align-items:center;gap:12px;
+  .row{display:grid;grid-template-columns:28px 54px 1fr 132px 88px 96px;align-items:center;gap:12px;
     padding:11px 16px;border-bottom:1px solid var(--line);position:relative}
   .row:last-child{border-bottom:0}
   .row.head{background:var(--panel2);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
@@ -79,35 +80,36 @@
   .row.head .r-qty,.row.head .r-w{text-align:right}
   .row .stripe{position:absolute;left:0;top:0;bottom:0;width:3px}
   .row.is-new .stripe{background:var(--in)}
-  .row.is-buy .stripe{background:var(--in);opacity:.55}
-  .row.is-sell .stripe{background:var(--out);opacity:.55}
-  .row.is-cash{opacity:.5}
+  .row.is-buy .stripe{background:var(--in);opacity:.5}
+  .row.is-sell .stripe{background:var(--out);opacity:.5}
+  .row.is-cash{background:var(--panel2)}
   .r-rank{color:var(--faint);font-size:12px;font-weight:600;text-align:right}
   .r-tk{font-size:12px;font-weight:800;color:var(--text)}
   .r-name{display:flex;align-items:center;gap:8px;min-width:0}
   .r-name .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--muted);font-size:13px}
+  .row.is-cash .r-name .t{color:var(--text);font-weight:600}
   .badge{font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;letter-spacing:.02em;flex-shrink:0}
   .badge.new{background:var(--in-dim);color:var(--in)}
   .badge.buy{background:var(--in-dim);color:var(--in)}
   .badge.sell{background:var(--out-dim);color:var(--out)}
-  .r-qty{text-align:right;font-weight:700}
+  .r-qty{text-align:right;font-weight:700;color:var(--text)}
   .r-qty .dq{display:block;font-size:11px;font-weight:700;margin-top:1px}
   .dq.pos{color:var(--in)} .dq.neg{color:var(--out)}
   .r-w{text-align:right;font-weight:600;color:var(--muted)}
-  .r-bar{height:6px;border-radius:4px;background:var(--panel2);overflow:hidden}
-  .r-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),#E9CE86)}
-  .row.is-new .r-bar i{background:linear-gradient(90deg,var(--in),#7BE9C6)}
+  .r-bar{height:6px;border-radius:4px;background:var(--panel2);overflow:hidden;border:1px solid var(--line)}
+  .r-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--bar1),var(--bar2))}
+  .row.is-new .r-bar i{background:linear-gradient(90deg,var(--in),#5FD3A6)}
 
   footer{margin-top:34px;font-size:12px;color:var(--faint);line-height:1.7}
-  .demo-banner{margin-top:22px;background:var(--out-dim);border:1px solid rgba(255,107,122,.3);
-    color:#FFC2C9;border-radius:12px;padding:11px 15px;font-size:13px;display:none}
+  .demo-banner{margin-top:22px;background:var(--out-dim);border:1px solid #F3C9C9;
+    color:#B42318;border-radius:12px;padding:11px 15px;font-size:13px;display:none}
   .demo-banner.show{display:block}
-  .demo-banner b{color:#fff}
+  .demo-banner b{color:#8A1A12}
 
   @media (max-width:720px){
     .band{grid-template-columns:1fr 1fr}
     .changes{grid-template-columns:1fr}
-    .row{grid-template-columns:24px 50px 1fr 96px 72px}
+    .row{grid-template-columns:24px 50px 1fr 110px 72px}
     .row .r-bar{display:none}
     h1{font-size:21px}
     .datepick{margin-left:0;width:100%}
@@ -158,6 +160,9 @@ const fmtDate=(iso)=>{ if(!iso) return "—"; const [y,m,d]=iso.split("-"); retu
 const pct=(v)=> v==null?"—":v.toFixed(2)+"%";
 const qty=(v)=> v==null?"—":Math.round(v).toLocaleString("en-US")+"주";
 const sQty=(v)=> (v>0?"+":"")+Math.round(v).toLocaleString("en-US")+"주";
+const won=(v)=> v==null?"—":Math.round(v).toLocaleString("en-US")+"원";
+
+function cashRank(h){ const n=h.name||""; if(n.includes("원화")) return 0; if(n.includes("설정")) return 2; return 1; }
 
 function computeDiff(cur,prev){
   if(!prev||!prev.length){ return {added:[],removed:[],bought:[],sold:[],changeOf:new Map()}; }
@@ -196,11 +201,11 @@ function renderBand(c){
     <div class="v num">${s.v}</div><div class="sub">${s.sub}</div></div>`).join("");
 }
 
-function liEntry(x){   // 편입/편출: 보유수량 표시
+function liEntry(x){
   const tk=`<span class="tk">${x.ticker||""}</span>`;
   return `<li>${tk}<span class="nm">${x.name}</span><span class="qty num">${qty(x.shares)}</span></li>`;
 }
-function liTrade(x){   // 추가매수/일부매도: 변동수량 강조 + 현재 보유
+function liTrade(x){
   const tk=`<span class="tk">${x.ticker||""}</span>`;
   const cls=x.share_delta>0?"pos":"neg";
   return `<li>${tk}<span class="nm">${x.name}</span><span class="qty num">${qty(x.shares)}</span><span class="d ${cls} num">${sQty(x.share_delta)}</span></li>`;
@@ -218,27 +223,39 @@ function renderChangeLists(c){
 }
 
 function renderTable(holdings,c){
-  const max=Math.max(1,...holdings.filter(h=>!h.is_cash).map(h=>h.weight||0));
-  const head=`<div class="row head"><span>#</span><span>티커</span><span>종목명</span><span class="r-qty">보유수량</span><span class="r-w">비중</span><span class="r-bar"></span></div>`;
-  const rows=holdings.map((h,i)=>{
+  const stocks=holdings.filter(h=>!h.is_cash);
+  const cash=holdings.filter(h=>h.is_cash).sort((a,b)=>cashRank(a)-cashRank(b));
+  const display=[...stocks,...cash];
+  const max=Math.max(1,...stocks.map(h=>h.weight||0));
+  const head=`<div class="row head"><span>#</span><span>티커</span><span>종목명</span><span class="r-qty">보유수량 / 금액</span><span class="r-w">비중</span><span class="r-bar"></span></div>`;
+  let n=0;
+  const rows=display.map((h)=>{
+    if(h.is_cash){
+      return `<div class="row is-cash"><span class="stripe"></span>
+        <span class="r-rank num"></span>
+        <span class="r-tk num"></span>
+        <span class="r-name"><span class="t">${h.name}</span></span>
+        <span class="r-qty num">${won(h.amount)}</span>
+        <span class="r-w num">—</span>
+        <span class="r-bar"></span></div>`;
+    }
+    n++;
     const ch=c.changeOf.get(h.ticker||h.name);
     let st="",badge="",dq="";
-    if(!h.is_cash){
-      if(ch?.type==="new"){ st="is-new"; badge=`<span class="badge new">NEW</span>`; }
-      else if(ch?.type==="buy"){ st="is-buy"; badge=`<span class="badge buy">▲</span>`; dq=`<span class="dq pos num">${sQty(ch.ds)}</span>`; }
-      else if(ch?.type==="sell"){ st="is-sell"; badge=`<span class="badge sell">▼</span>`; dq=`<span class="dq neg num">${sQty(ch.ds)}</span>`; }
-    } else st="is-cash";
+    if(ch?.type==="new"){ st="is-new"; badge=`<span class="badge new">NEW</span>`; }
+    else if(ch?.type==="buy"){ st="is-buy"; badge=`<span class="badge buy">▲</span>`; dq=`<span class="dq pos num">${sQty(ch.ds)}</span>`; }
+    else if(ch?.type==="sell"){ st="is-sell"; badge=`<span class="badge sell">▼</span>`; dq=`<span class="dq neg num">${sQty(ch.ds)}</span>`; }
     const w=(h.weight||0)/max*100;
     return `<div class="row ${st}"><span class="stripe"></span>
-      <span class="r-rank num">${i+1}</span>
+      <span class="r-rank num">${n}</span>
       <span class="r-tk num">${h.ticker||""}</span>
       <span class="r-name">${badge}<span class="t">${h.name}</span></span>
-      <span class="r-qty num">${h.is_cash?"—":qty(h.shares)}${dq}</span>
+      <span class="r-qty num">${qty(h.shares)}${dq}</span>
       <span class="r-w num">${pct(h.weight)}</span>
       <span class="r-bar"><i style="width:${Math.max(0,w).toFixed(1)}%"></i></span></div>`;
   }).join("");
   $("#table").innerHTML=head+rows;
-  $("#count").textContent=`${holdings.filter(h=>!h.is_cash).length}종목`;
+  $("#count").textContent=`${stocks.length}종목`;
 }
 
 function render(snapshot,prevDate,changes){
@@ -273,27 +290,26 @@ async function init(){
 function loadDemo(){
   $("#demoBanner").classList.add("show");
   const mk=(isin,ticker,name,weight,shares)=>({isin,ticker,name,code:ticker+" US Equity",weight,shares,is_cash:false,key:isin});
+  const cash=(name,amount)=>({isin:name,ticker:"",name,code:"",weight:0,shares:null,amount,is_cash:true,key:name});
   const prev=[
     mk("US5951121038","MU","MICRON TECH",5.5,40),
     mk("US0079031078","AMD","ADVANCED MICRO DEVICES",6.8,101),
     mk("US4581401001","INTC","INTEL Corp",6.4,379),
-    mk("US0937121079","BE","BLOOM ENERGY CORPORATION",5.8,138),
     mk("US67066G1040","NVDA","NVIDIA Corp",6.4,210),
     mk("US02079K3059","GOOGL","ALPHABET INC-CL A",4.2,95),
     mk("US0378331005","AAPL","APPLE Inc",2.7,71),
-    mk("US88160R1014","TSLA","TESLA MOTORS",2.0,41),
     mk("OLD0000000001","HOOD","Robinhood Markets Inc",1.1,84),
   ];
   const cur=[
     mk("US5951121038","MU","MICRON TECH",7.0,52),
     mk("US0079031078","AMD","ADVANCED MICRO DEVICES",6.8,101),
     mk("US4581401001","INTC","INTEL Corp",6.4,379),
-    mk("US0937121079","BE","BLOOM ENERGY CORPORATION",5.8,138),
     mk("US67066G1040","NVDA","NVIDIA Corp",4.4,172),
     mk("US02079K3059","GOOGL","ALPHABET INC-CL A",4.2,95),
     mk("US0378331005","AAPL","APPLE Inc",2.7,71),
     mk("US84615Q1031","SPCX","Space Exploration Technologies",2.4,120),
-    mk("US5949181045","MSFT","MICROSOFT",2.0,43),
+    cash("설정현금액",1219815837),
+    cash("원화현금",23610653),
   ];
   $("#date").innerHTML=`<option>2026.06.26 (데모)</option><option>2026.06.25 (데모)</option>`;
   render({date:"2026-06-26",holdings:cur},"2026-06-25",computeDiff(cur,prev));
