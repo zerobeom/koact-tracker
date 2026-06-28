@@ -31,16 +31,16 @@ from pathlib import Path
 # slug: 폴더/URL용 영문 식별자 / fid: 운용사 펀드ID / ticker: 거래소 단축코드(표시용)
 ETFS = [
     {"slug": "us-nasdaq", "fid": "2ETFQ1", "ticker": "0015B0",
-     "name": "KoAct 미국나스닥성장기업액티브",
+     "name": "KoAct 미국나스닥성장기업액티브", "start": "2025-02-01",
      "benchmarks": [
-         {"k": "b1", "label": "나스닥종합", "sym": "IXIC"},
-         {"k": "b2", "label": "나스닥100", "sym": "YAHOO:^NDX"},
+         {"k": "b1", "label": "나스닥종합", "sym": ["IXIC", "YAHOO:^IXIC"]},
+         {"k": "b2", "label": "나스닥100", "sym": ["YAHOO:^NDX", "NDX"]},
      ]},
     {"slug": "kr-valueup", "fid": "2ETFP3", "ticker": "495230",
-     "name": "KoAct 코리아밸류업액티브",
+     "name": "KoAct 코리아밸류업액티브", "start": "2024-11-01",
      "benchmarks": [
-         {"k": "b1", "label": "코스피", "sym": "KS11"},
-         {"k": "b2", "label": "코스피100", "sym": "KS100"},
+         {"k": "b1", "label": "코스피", "sym": ["KS11", "KOSPI"]},
+         {"k": "b2", "label": "코스피100", "sym": ["KS100", "KOSPI100", "KPI100"]},
      ]},
 ]
 
@@ -254,18 +254,27 @@ def diff(cur, prev):
 
 
 # ── 벤치마크 수익률 ──────────────────────────────────────────────────────
-def _close(sym: str, start: str, end: str):
+def _close(sym, start: str, end: str):
     """FinanceDataReader로 일별 종가 시리즈(인덱스=날짜) 반환. 실패 시 예외/None.
 
-    sym 예: '0015B0'(ETF·네이버), 'KS11'(코스피), 'KS100'(코스피100),
-            'IXIC'(나스닥종합), 'YAHOO:^NDX'(나스닥100).
+    sym은 문자열 또는 후보 목록(list). 목록이면 데이터가 나올 때까지 차례로 시도한다.
+    예: '0015B0'(ETF·네이버), 'KS11'(코스피), ['KS100','KOSPI100'](코스피100),
+        'IXIC'(나스닥종합), 'YAHOO:^NDX'(나스닥100).
     KRX 직접 접근이 아니라 네이버/야후를 쓰므로 로그인이 필요 없다.
     """
     import FinanceDataReader as fdr
-    df = fdr.DataReader(sym, start, end)
-    if df is None or len(df) == 0 or "Close" not in df.columns:
-        return None
-    return df["Close"]
+    cands = sym if isinstance(sym, (list, tuple)) else [sym]
+    last_err = None
+    for s in cands:
+        try:
+            df = fdr.DataReader(s, start, end)
+            if df is not None and len(df) and "Close" in df.columns and df["Close"].notna().any():
+                return df["Close"]
+        except Exception as e:
+            last_err = e
+    if last_err:
+        raise last_err
+    return None
 
 
 def monthly_last(series):
@@ -286,8 +295,9 @@ def build_perf(etf: dict, end_iso: str, debug: bool = False):
     bms = etf.get("benchmarks") or []
     if not bms:
         return
+    start = etf.get("start", PERF_START)   # ETF 상장월부터
     try:
-        etf_m = monthly_last(_close(etf["ticker"], PERF_START, end_iso))
+        etf_m = monthly_last(_close(etf["ticker"], start, end_iso))
     except Exception as e:
         print(f"  [perf] ETF 시세 실패: {e}")
         etf_m = {}
@@ -298,7 +308,7 @@ def build_perf(etf: dict, end_iso: str, debug: bool = False):
     bm_m, labels = {}, []
     for b in bms:
         try:
-            bm_m[b["k"]] = monthly_last(_close(b["sym"], PERF_START, end_iso))
+            bm_m[b["k"]] = monthly_last(_close(b["sym"], start, end_iso))
             if not bm_m[b["k"]]:
                 print(f"  [perf] {b['label']}({b['sym']}) 데이터 비어있음")
         except Exception as e:
