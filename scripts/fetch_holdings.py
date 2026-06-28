@@ -40,7 +40,6 @@ ETFS = [
      "name": "KoAct 코리아밸류업액티브", "start": "2024-11-01",
      "benchmarks": [
          {"k": "b1", "label": "코스피", "sym": ["KS11", "KOSPI"]},
-         {"k": "b2", "label": "코스피100", "sym": ["KS100", "KOSPI100", "KPI100"]},
      ]},
 ]
 
