@@ -33,18 +33,18 @@ ETFS = [
     {"slug": "us-nasdaq", "fid": "2ETFQ1", "ticker": "0015B0",
      "name": "KoAct 미국나스닥성장기업액티브",
      "benchmarks": [
-         {"k": "b1", "label": "나스닥종합", "src": "stooq", "sym": "^ndq"},
-         {"k": "b2", "label": "나스닥100", "src": "stooq", "sym": "^ndx"},
+         {"k": "b1", "label": "나스닥종합", "sym": "IXIC"},
+         {"k": "b2", "label": "나스닥100", "sym": "YAHOO:^NDX"},
      ]},
     {"slug": "kr-valueup", "fid": "2ETFP3", "ticker": "495230",
      "name": "KoAct 코리아밸류업액티브",
      "benchmarks": [
-         {"k": "b1", "label": "코스피", "src": "krx_index", "sym": "1001"},
-         {"k": "b2", "label": "코스피100", "src": "krx_index", "sym": "1034"},
+         {"k": "b1", "label": "코스피", "sym": "KS11"},
+         {"k": "b2", "label": "코스피100", "sym": "KS100"},
      ]},
 ]
 
-PERF_START = "20250101"   # 수익률 시계열 조회 시작(두 ETF 상장 이전)
+PERF_START = "2025-01-01"   # 수익률 시계열 조회 시작(두 ETF 상장 이전)
 
 URL = "https://www.samsungactive.co.kr/excel_pdf.do"
 LOOKBACK_DAYS = 7                       # 해당일 파일이 없으면 며칠 전까지 후퇴 탐색
@@ -254,31 +254,18 @@ def diff(cur, prev):
 
 
 # ── 벤치마크 수익률 ──────────────────────────────────────────────────────
-def _series_close(kind: str, sym: str, start: str, end: str):
-    """일별 종가 시리즈(인덱스=날짜)를 반환. 실패 시 예외."""
-    import pandas as pd
-    if kind in ("etf", "krx_index"):
-        from pykrx import stock
-        if kind == "etf":
-            df = stock.get_etf_ohlcv_by_date(start, end, sym)
-        else:
-            df = stock.get_index_ohlcv_by_date(start, end, sym)
-        if df is None or len(df) == 0:
-            return None
-        col = "종가" if "종가" in df.columns else df.columns[3]
-        return df[col]
-    if kind == "stooq":
-        import io
-        import requests
-        url = f"https://stooq.com/q/d/l/?s={sym}&i=d&d1={start}&d2={end}"
-        r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
-        r.raise_for_status()
-        df = pd.read_csv(io.StringIO(r.text))
-        if "Date" not in df.columns or "Close" not in df.columns:
-            return None
-        df["Date"] = pd.to_datetime(df["Date"])
-        return df.set_index("Date")["Close"]
-    return None
+def _close(sym: str, start: str, end: str):
+    """FinanceDataReader로 일별 종가 시리즈(인덱스=날짜) 반환. 실패 시 예외/None.
+
+    sym 예: '0015B0'(ETF·네이버), 'KS11'(코스피), 'KS100'(코스피100),
+            'IXIC'(나스닥종합), 'YAHOO:^NDX'(나스닥100).
+    KRX 직접 접근이 아니라 네이버/야후를 쓰므로 로그인이 필요 없다.
+    """
+    import FinanceDataReader as fdr
+    df = fdr.DataReader(sym, start, end)
+    if df is None or len(df) == 0 or "Close" not in df.columns:
+        return None
+    return df["Close"]
 
 
 def monthly_last(series):
@@ -295,11 +282,15 @@ def monthly_last(series):
     return out
 
 
-def build_perf(etf: dict, end_yyyymmdd: str, debug: bool = False):
+def build_perf(etf: dict, end_iso: str, debug: bool = False):
     bms = etf.get("benchmarks") or []
     if not bms:
         return
-    etf_m = monthly_last(_series_close("etf", etf["ticker"], PERF_START, end_yyyymmdd))
+    try:
+        etf_m = monthly_last(_close(etf["ticker"], PERF_START, end_iso))
+    except Exception as e:
+        print(f"  [perf] ETF 시세 실패: {e}")
+        etf_m = {}
     if not etf_m:
         print("  [perf] ETF 시세를 받지 못해 건너뜀")
         return
@@ -307,9 +298,11 @@ def build_perf(etf: dict, end_yyyymmdd: str, debug: bool = False):
     bm_m, labels = {}, []
     for b in bms:
         try:
-            bm_m[b["k"]] = monthly_last(_series_close(b["src"], b["sym"], PERF_START, end_yyyymmdd))
+            bm_m[b["k"]] = monthly_last(_close(b["sym"], PERF_START, end_iso))
+            if not bm_m[b["k"]]:
+                print(f"  [perf] {b['label']}({b['sym']}) 데이터 비어있음")
         except Exception as e:
-            print(f"  [perf] {b['label']} 시세 실패: {e}")
+            print(f"  [perf] {b['label']}({b['sym']}) 시세 실패: {e}")
             bm_m[b["k"]] = {}
         labels.append({"k": b["k"], "label": b["label"]})
 
@@ -330,8 +323,8 @@ def build_perf(etf: dict, end_yyyymmdd: str, debug: bool = False):
             row[b["k"]] = cum(bm_m[b["k"]], mo)
         series.append(row)
 
-    perf = {"as_of": f"{end_yyyymmdd[:4]}-{end_yyyymmdd[4:6]}-{end_yyyymmdd[6:8]}",
-            "base": base, "etf_label": etf["name"].replace("KoAct ", ""),
+    perf = {"as_of": end_iso, "base": base,
+            "etf_label": etf["name"].replace("KoAct ", ""),
             "benchmarks": labels, "series": series}
     (DATA / etf["slug"] / "perf.json").write_text(
         json.dumps(perf, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -388,7 +381,7 @@ def process_etf(etf: dict, start: str, debug: bool = False):
 
     # 벤치마크 수익률 (실패해도 보유종목 데이터에는 영향 없음)
     try:
-        build_perf(etf, date_iso.replace("-", ""), debug=debug)
+        build_perf(etf, date_iso, debug=debug)
     except Exception as e:
         print(f"  [perf] 실패(건너뜀): {e}")
 
