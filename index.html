@@ -103,6 +103,24 @@
   .r-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--bar1),var(--bar2))}
   .row.is-new .r-bar i{background:linear-gradient(90deg,var(--in),#5FD3A6)}
 
+  .row.clickable{cursor:pointer}
+  .row.clickable:hover{background:#FAFBFC}
+  .row.active{background:#F0F3F7}
+  .detail{border-bottom:1px solid var(--line);background:#FBFCFE}
+  .detail-load{padding:18px 16px;color:var(--muted);font-size:13px}
+  .detail-inner{padding:14px 16px 18px}
+  .detail-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .dh-tk{font-weight:800;font-size:14px} .dh-nm{color:var(--muted);font-size:13px}
+  .dh-sub{margin-left:auto;color:var(--faint);font-size:11px}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .chart-t{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+  .barsvg{width:100%;height:auto;display:block}
+  .barsvg .bv{font-size:11px;fill:var(--muted);font-weight:700}
+  .barsvg .bx{font-size:10px;fill:var(--faint)}
+  .barsvg .axis{stroke:var(--line);stroke-width:1}
+  .detail-note{margin-top:10px;font-size:12px;color:var(--faint)}
+  @media(max-width:720px){ .charts{grid-template-columns:1fr} }
+
   footer{margin-top:34px;font-size:12px;color:var(--faint);line-height:1.7}
   .demo-banner{margin-top:22px;background:var(--out-dim);border:1px solid #F3C9C9;
     color:#B42318;border-radius:12px;padding:11px 15px;font-size:13px;display:none}
@@ -257,7 +275,7 @@ function renderTable(holdings,c){
     else if(ch?.type==="buy"){ st="is-buy"; badge=`<span class="badge buy">▲</span>`; dq=`<span class="dq pos num">${sQty(ch.ds)}</span>`; }
     else if(ch?.type==="sell"){ st="is-sell"; badge=`<span class="badge sell">▼</span>`; dq=`<span class="dq neg num">${sQty(ch.ds)}</span>`; }
     const w=(h.weight||0)/max*100;
-    return `<div class="row ${st}"><span class="stripe"></span>
+    return `<div class="row clickable ${st}" data-key="${keyOf(h)}" data-name="${h.name}" data-ticker="${h.ticker||""}"><span class="stripe"></span>
       <span class="r-rank num">${n}</span>
       <span class="r-tk num">${h.ticker||""}</span>
       <span class="r-name">${badge}<span class="t">${h.name}</span></span>
@@ -269,7 +287,82 @@ function renderTable(holdings,c){
   $("#count").textContent=`${stocks.length}종목`;
 }
 
+// ── 종목 클릭 시 월별 추이 차트 ───────────────────────────────────────────
+let CURVIEW={slug:null,snap:null};
+const SNAPCACHE=new Map();
+async function getHoldings(slug,iso){
+  const ck=(slug||"_")+"|"+iso;
+  if(SNAPCACHE.has(ck)) return SNAPCACHE.get(ck);
+  const h=(await snapshotOf(slug,iso)).holdings;
+  SNAPCACHE.set(ck,h); return h;
+}
+function monthEndDates(dates){
+  const m=new Map();                       // YYYY-MM -> 그 달의 마지막(최신) 거래일
+  for(const d of dates){ const k=d.slice(0,7); if(!m.has(k)||d>m.get(k)) m.set(k,d); }
+  return [...m.values()].sort();
+}
+const monthLbl=(iso)=> iso.slice(2,7).replace("-",".");   // 2026-06-26 -> 26.06
+
+async function buildSeries(key){
+  const slug=CURVIEW.slug;
+  const dates = (DATES&&DATES.length)? monthEndDates(DATES) : [CURVIEW.snap.date];
+  const pts=[];
+  for(const d of dates){
+    let holds;
+    if(DATES&&DATES.length){ try{ holds=await getHoldings(slug,d); }catch(e){ continue; } }
+    else holds=CURVIEW.snap.holdings;
+    const h=holds.find(x=>keyOf(x)===key);
+    pts.push({date:d, weight:h?(h.weight||0):0, shares:h?(h.shares||0):0});
+  }
+  return pts;
+}
+
+function barSVG(pts,getV,fmt,color,hi){
+  const n=pts.length||1;
+  const W=Math.max(260,n*54), H=172, padT=22, padB=26, padX=10;
+  const innerH=H-padT-padB, slot=(W-padX*2)/n, bw=Math.min(34,slot*0.6);
+  const vals=pts.map(getV), max=Math.max(...vals,0)||1;
+  const showVal=n<=14, lblEvery=n>18?Math.ceil(n/12):1;
+  let g=`<line x1="${padX}" y1="${padT+innerH}" x2="${W-padX}" y2="${padT+innerH}" class="axis"/>`;
+  pts.forEach((p,i)=>{
+    const v=getV(p), h=v/max*innerH, x=padX+i*slot+(slot-bw)/2, y=padT+(innerH-h), last=i===n-1;
+    g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" rx="3" fill="${last?hi:color}"><title>${monthLbl(p.date)} · ${fmt(v)}</title></rect>`;
+    if(v && (showVal||last)) g+=`<text x="${(x+bw/2).toFixed(1)}" y="${(y-5).toFixed(1)}" text-anchor="middle" class="bv">${fmt(v)}</text>`;
+    if(i%lblEvery===0||last) g+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" class="bx">${monthLbl(p.date)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" class="barsvg" preserveAspectRatio="xMidYMid meet">${g}</svg>`;
+}
+
+function detailHTML(ticker,name,pts){
+  const note=pts.length<2
+    ? `<div class="detail-note">아직 ${pts.length}개월치 데이터뿐이에요. 매월 말 데이터가 쌓이면 추이가 그려져요.</div>` : "";
+  return `<div class="detail-inner">
+    <div class="detail-head"><span class="dh-tk">${ticker||""}</span><span class="dh-nm">${name||""}</span><span class="dh-sub">월별 추이 · 매월 마지막 거래일</span></div>
+    <div class="charts">
+      <div class="chart"><div class="chart-t">비중 (%)</div>${barSVG(pts,p=>p.weight,v=>v.toFixed(1)+"%","#6366F1","#3730A3")}</div>
+      <div class="chart"><div class="chart-t">보유수량 (주)</div>${barSVG(pts,p=>p.shares,v=>Math.round(v).toLocaleString("en-US"),"#0E9E6E","#0A7150")}</div>
+    </div>${note}</div>`;
+}
+
+async function onRowClick(e){
+  const row=e.target.closest(".row[data-key]");
+  if(!row) return;
+  const next=row.nextElementSibling;
+  if(next && next.classList.contains("detail")){ next.remove(); row.classList.remove("active"); return; }
+  document.querySelectorAll(".detail").forEach(d=>d.remove());
+  document.querySelectorAll(".row.active").forEach(r=>r.classList.remove("active"));
+  row.classList.add("active");
+  const det=document.createElement("div");
+  det.className="detail"; det.innerHTML=`<div class="detail-load">불러오는 중…</div>`;
+  row.after(det);
+  try{
+    const pts=await buildSeries(row.getAttribute("data-key"));
+    det.innerHTML=detailHTML(row.getAttribute("data-ticker"),row.getAttribute("data-name"),pts);
+  }catch(err){ det.innerHTML=`<div class="detail-load">데이터를 불러오지 못했어요.</div>`; }
+}
+
 function render(snapshot,baseDate,changes){
+  CURVIEW={slug:(curEtf?curEtf.slug:null), snap:snapshot};
   $("#ctx").innerHTML=baseDate
     ? `<b>${fmtDate(snapshot.date)}</b> 구성 <span class="vs">·</span> <b>${fmtDate(baseDate)}</b> 대비 매매`
     : `<b>${fmtDate(snapshot.date)}</b> 구성 <span class="vs">· 비교 대상일 없음</span>`;
@@ -362,6 +455,7 @@ function loadDemo(){
   render({date:"2026-06-26",holdings:cur},"2026-06-25",computeDiff(cur,prev));
 }
 
+$("#table").addEventListener("click",onRowClick);
 init();
 </script>
 </body>
