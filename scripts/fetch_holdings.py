@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """
-KoAct 미국나스닥성장기업액티브 (0015B0) 일별 전체 구성종목 수집기.
+KoAct ETF 일별 전체 구성종목 수집기 (다중 ETF 지원).
 
 데이터 소스: 삼성액티브자산운용 '투자종목정보(PDF)' 엑셀 다운로드
-    https://www.samsungactive.co.kr/excel_pdf.do?fId=2ETFQ1&gijunYMD=YYYYMMDD
-운용사 팩트시트(상위 종목만)와 달리 이 엑셀은 전 종목을 담고 있다.
+    https://www.samsungactive.co.kr/excel_pdf.do?fId={펀드ID}&gijunYMD=YYYYMMDD
 
-산출물:
-    data/snapshots/YYYY-MM-DD.json  : 그날 전체 구성종목 스냅샷
-    data/dates.json                 : 보유한 스냅샷 날짜 목록
-    data/latest.json                : 최신 스냅샷 + 전일 대비 변동(편입/편출/비중증감)
+추적 대상은 아래 ETFS 목록에 추가만 하면 늘어납니다.
+
+산출물(ETF별로 분리):
+    data/etfs.json                      : 사이트가 읽는 ETF 목록
+    data/{slug}/snapshots/YYYY-MM-DD.json
+    data/{slug}/dates.json
+    data/{slug}/latest.json
 
 사용:
-    python scripts/fetch_holdings.py            # 오늘(KST) 기준, 없으면 직전 영업일로 자동 후퇴
+    python scripts/fetch_holdings.py            # 오늘(KST) 기준, 모든 ETF
     python scripts/fetch_holdings.py 20260626   # 특정일 강제 수집(과거 채우기)
     python scripts/fetch_holdings.py --debug     # 파싱 전 원본 표 출력
 """
@@ -25,17 +27,20 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-# ── 설정 ────────────────────────────────────────────────────────────────
-FID = "2ETFQ1"                          # 운용사 펀드 ID (KoAct 미국나스닥성장기업액티브)
-TICKER = "0015B0"                       # 거래소 단축코드 (표시용)
-ETF_NAME = "KoAct 미국나스닥성장기업액티브"
+# ── 추적할 ETF 목록 ──────────────────────────────────────────────────────
+# slug: 폴더/URL용 영문 식별자 / fid: 운용사 펀드ID / ticker: 거래소 단축코드(표시용)
+ETFS = [
+    {"slug": "us-nasdaq", "fid": "2ETFQ1", "ticker": "0015B0",
+     "name": "KoAct 미국나스닥성장기업액티브"},
+    {"slug": "kr-valueup", "fid": "2ETFP3", "ticker": "495230",
+     "name": "KoAct 코리아밸류업액티브"},
+]
+
 URL = "https://www.samsungactive.co.kr/excel_pdf.do"
-WEIGHT_EPS = 0.05                       # 이 %p 이상 변할 때만 '비중 증가/감소'로 기록
 LOOKBACK_DAYS = 7                       # 해당일 파일이 없으면 며칠 전까지 후퇴 탐색
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
-SNAP = DATA / "snapshots"
 KST = timezone(timedelta(hours=9))
 
 
@@ -62,7 +67,7 @@ def clean(v):
 
 
 def clean_ticker(code: str) -> str:
-    """'MU US Equity' -> 'MU'. 현금/특수코드는 빈 문자열."""
+    """'MU US Equity' -> 'MU', '005930 KS Equity' -> '005930'. 현금/특수코드는 빈 문자열."""
     code = clean(code)
     if not code or code.startswith(("CASH", "KRD", "KRW")):
         return ""
@@ -70,11 +75,11 @@ def clean_ticker(code: str) -> str:
 
 
 # ── 다운로드 + 파싱 ─────────────────────────────────────────────────────
-def download(date_yyyymmdd: str) -> bytes:
+def download(date_yyyymmdd: str, fid: str) -> bytes:
     import requests
     r = requests.get(
         URL,
-        params={"fId": FID, "gijunYMD": date_yyyymmdd},
+        params={"fId": fid, "gijunYMD": date_yyyymmdd},
         timeout=30,
         headers={"User-Agent": "Mozilla/5.0",
                  "Referer": "https://www.samsungactive.co.kr/"},
@@ -86,12 +91,10 @@ def download(date_yyyymmdd: str) -> bytes:
 def read_table(content: bytes):
     """엑셀(.xls BIFF) 우선, 실패 시 HTML 표로 폴백. header 없이 원본 셀 그대로."""
     import pandas as pd
-    # 구형 .xls (CDFV2/BIFF8)
     try:
         return pd.read_excel(io.BytesIO(content), header=None, dtype=str, engine="xlrd")
     except Exception:
         pass
-    # 일부 응답이 HTML 표일 경우
     try:
         tables = pd.read_html(io.BytesIO(content))
         if tables:
@@ -103,14 +106,12 @@ def read_table(content: bytes):
 
 def normalize(raw, debug: bool = False):
     """원본 표(header=None DataFrame) -> (기준일 'YYYY-MM-DD', holdings[list])."""
-    import pandas as pd
     if raw is None or len(raw) == 0:
         return None, None
     raw = raw.reset_index(drop=True)
     if debug:
         print(raw.head(6).to_string())
 
-    # 헤더 행 찾기 (종목명 + ISIN/비중 포함)
     hdr = None
     for i in range(min(12, len(raw))):
         cells = [str(x).strip() for x in raw.iloc[i].tolist()]
@@ -124,7 +125,6 @@ def normalize(raw, debug: bool = False):
     body = raw.iloc[hdr + 1:].reset_index(drop=True)
     body.columns = cols
 
-    # 헤더 위쪽에서 기준일 추출
     base_date = None
     for i in range(hdr):
         for x in raw.iloc[i].tolist():
@@ -159,9 +159,7 @@ def normalize(raw, debug: bool = False):
         is_cash = (isin.startswith(("CASH", "KRD", "KRW"))
                    or "현금" in name or "설정현금" in name)
         holdings.append({
-            "isin": isin,
-            "name": name,
-            "code": code,
+            "isin": isin, "name": name, "code": code,
             "ticker": clean_ticker(code),
             "weight": to_num(r.get(cW)) if cW else None,
             "shares": to_num(r.get(cQ)) if cQ else None,
@@ -172,7 +170,6 @@ def normalize(raw, debug: bool = False):
 
     holdings = [h for h in holdings if h["key"]]
 
-    # 비중 정규화: 소수(합≈1)로 들어오면 ×100 해서 백분율(합≈100)로 통일
     total = sum((h["weight"] or 0) for h in holdings)
     if 0 < total <= 3:
         for h in holdings:
@@ -182,38 +179,32 @@ def normalize(raw, debug: bool = False):
         if h["weight"] is not None:
             h["weight"] = round(h["weight"], 4)
         if h["shares"] is not None:
-            h["shares"] = int(round(h["shares"]))   # 수량은 정수 (변환 잔여 소수 제거)
+            h["shares"] = int(round(h["shares"]))
 
     holdings.sort(key=lambda z: (z["weight"] or 0), reverse=True)
     return base_date, holdings
 
 
-def fetch_latest_available(start_yyyymmdd: str, debug: bool = False):
-    """start일부터 과거로 내려가며 첫 유효 파일을 찾는다. (기준일, holdings) 반환."""
+def fetch_latest_available(start_yyyymmdd: str, fid: str, debug: bool = False):
     d = datetime.strptime(start_yyyymmdd, "%Y%m%d")
     for _ in range(LOOKBACK_DAYS + 1):
         ds = d.strftime("%Y%m%d")
         try:
-            content = download(ds)
+            content = download(ds, fid)
             base_date, holdings = normalize(read_table(content), debug=debug)
             if holdings:
                 if not base_date:
                     base_date = f"{ds[:4]}-{ds[4:6]}-{ds[6:8]}"
                 return base_date, holdings
-            print(f"  - {ds}: 유효 데이터 없음, 하루 전으로")
+            print(f"    - {ds}: 유효 데이터 없음, 하루 전으로")
         except Exception as e:
-            print(f"  - {ds}: 다운로드/파싱 실패 ({e})")
+            print(f"    - {ds}: 다운로드/파싱 실패 ({e})")
         d -= timedelta(days=1)
     return None, None
 
 
-# ── 변동 계산 ────────────────────────────────────────────────────────────
+# ── 변동 계산 (수량 중심) ────────────────────────────────────────────────
 def diff(cur, prev):
-    """수량(주식 수) 변동을 중심으로 비교한다.
-
-    비중은 주가 등락만으로도 변하지만, 수량은 펀드매니저가 실제로 매매해야만 바뀐다.
-    그래서 added/removed(편입·편출)와 함께 bought/sold(추가매수·일부매도)를 수량 기준으로 분류한다.
-    """
     if not prev:
         return {"added": [], "removed": [], "bought": [], "sold": []}
     pmap = {h["key"]: h for h in prev}
@@ -253,15 +244,52 @@ def diff(cur, prev):
 
 
 # ── 저장 ────────────────────────────────────────────────────────────────
-def load_snapshot(date_iso):
-    f = SNAP / f"{date_iso}.json"
+def load_snapshot(snap_dir: Path, date_iso: str):
+    f = snap_dir / f"{date_iso}.json"
     if f.exists():
         return json.loads(f.read_text(encoding="utf-8"))["holdings"]
     return None
 
 
-def existing_dates():
-    return sorted(p.stem for p in SNAP.glob("*.json"))
+def existing_dates(snap_dir: Path):
+    return sorted(p.stem for p in snap_dir.glob("*.json"))
+
+
+def process_etf(etf: dict, start: str, debug: bool = False):
+    slug, fid = etf["slug"], etf["fid"]
+    edir = DATA / slug
+    snap_dir = edir / "snapshots"
+    snap_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"[{slug}] {etf['name']} ({etf['ticker']}) — 요청 기준일 {start}")
+    date_iso, holdings = fetch_latest_available(start, fid, debug=debug)
+    if not holdings:
+        print(f"  [skip] 최근 영업일 데이터를 찾지 못함.")
+        return
+
+    prev_dates = [d for d in existing_dates(snap_dir) if d < date_iso]
+    prev_date = prev_dates[-1] if prev_dates else None
+    prev = load_snapshot(snap_dir, prev_date) if prev_date else None
+
+    snap = {"date": date_iso, "ticker": etf["ticker"], "fund_id": fid,
+            "name": etf["name"],
+            "count": sum(1 for h in holdings if not h["is_cash"]),
+            "holdings": holdings}
+    (snap_dir / f"{date_iso}.json").write_text(
+        json.dumps(snap, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    latest = dict(snap)
+    latest["prev_date"] = prev_date
+    latest["changes"] = diff(holdings, prev)
+    (edir / "latest.json").write_text(
+        json.dumps(latest, ensure_ascii=False, indent=2), encoding="utf-8")
+    (edir / "dates.json").write_text(
+        json.dumps(existing_dates(snap_dir), ensure_ascii=False, indent=2), encoding="utf-8")
+
+    c = latest["changes"]
+    print(f"  [ok] {date_iso} · {snap['count']}종목. 전일({prev_date}) 대비 "
+          f"편입 {len(c['added'])} · 편출 {len(c['removed'])} · "
+          f"추가매수 {len(c['bought'])} · 일부매도 {len(c['sold'])}")
 
 
 def main():
@@ -269,37 +297,14 @@ def main():
     debug = "--debug" in sys.argv
     start = args[0] if args else today_kst()
 
-    SNAP.mkdir(parents=True, exist_ok=True)
-    print(f"[fetch] {ETF_NAME} ({TICKER}) — 요청 기준일 {start}")
+    DATA.mkdir(parents=True, exist_ok=True)
+    # 사이트가 읽는 ETF 목록
+    (DATA / "etfs.json").write_text(
+        json.dumps([{k: e[k] for k in ("slug", "name", "ticker", "fid")} for e in ETFS],
+                   ensure_ascii=False, indent=2), encoding="utf-8")
 
-    date_iso, holdings = fetch_latest_available(start, debug=debug)
-    if not holdings:
-        print("[skip] 최근 영업일 데이터를 찾지 못함. 정상 종료.")
-        return 0
-
-    prev_dates = [d for d in existing_dates() if d < date_iso]
-    prev_date = prev_dates[-1] if prev_dates else None
-    prev = load_snapshot(prev_date) if prev_date else None
-
-    snap = {"date": date_iso, "ticker": TICKER, "fund_id": FID, "name": ETF_NAME,
-            "count": sum(1 for h in holdings if not h["is_cash"]),
-            "holdings": holdings}
-    (SNAP / f"{date_iso}.json").write_text(
-        json.dumps(snap, ensure_ascii=False, indent=2), encoding="utf-8")
-
-    latest = dict(snap)
-    latest["prev_date"] = prev_date
-    latest["changes"] = diff(holdings, prev)
-    (DATA / "latest.json").write_text(
-        json.dumps(latest, ensure_ascii=False, indent=2), encoding="utf-8")
-
-    (DATA / "dates.json").write_text(
-        json.dumps(existing_dates(), ensure_ascii=False, indent=2), encoding="utf-8")
-
-    c = latest["changes"]
-    print(f"[ok] {date_iso} · {snap['count']}종목 저장. 전일({prev_date}) 대비 "
-          f"편입 {len(c['added'])} · 편출 {len(c['removed'])} · "
-          f"추가매수 {len(c['bought'])} · 일부매도 {len(c['sold'])}")
+    for etf in ETFS:
+        process_etf(etf, start, debug=debug)
     return 0
 
 
