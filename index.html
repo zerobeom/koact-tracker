@@ -75,12 +75,12 @@
   .tablehead h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em}
   .tablehead .count{font-size:13px;color:var(--muted)}
   .table{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
-  .row{display:grid;grid-template-columns:28px 54px 1fr 168px 84px 96px;align-items:center;gap:12px;
+  .row{display:grid;grid-template-columns:28px 52px 1fr 112px 150px 78px 88px;align-items:center;gap:12px;
     padding:11px 16px;border-bottom:1px solid var(--line);position:relative}
   .row:last-child{border-bottom:0}
   .row.head{background:var(--panel2);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
     color:var(--faint);font-weight:700;padding:9px 16px}
-  .row.head .r-qty,.row.head .r-w{text-align:right}
+  .row.head .r-price,.row.head .r-qty,.row.head .r-w{text-align:right}
   .row .stripe{position:absolute;left:0;top:0;bottom:0;width:3px}
   .row.is-new .stripe{background:var(--in)}
   .row.is-buy .stripe{background:var(--in);opacity:.5}
@@ -95,6 +95,7 @@
   .badge.new{background:var(--in-dim);color:var(--in)}
   .badge.buy{background:var(--in-dim);color:var(--in)}
   .badge.sell{background:var(--out-dim);color:var(--out)}
+  .r-price{text-align:right;font-weight:600;color:var(--muted);white-space:nowrap}
   .r-qty{text-align:right;font-weight:700;color:var(--text);white-space:nowrap}
   .r-qty .dq{display:block;font-size:11px;font-weight:700;margin-top:1px}
   .dq.pos{color:var(--in)} .dq.neg{color:var(--out)}
@@ -149,8 +150,8 @@
   @media (max-width:720px){
     .band{grid-template-columns:1fr 1fr}
     .changes{grid-template-columns:1fr}
-    .row{grid-template-columns:24px 50px 1fr 132px 64px}
-    .row .r-bar{display:none}
+    .row{grid-template-columns:22px 44px 1fr 88px 96px}
+    .row .r-bar,.row .r-w{display:none}
     h1{font-size:21px}
     .datepick{margin-left:0;width:100%}
     header{align-items:flex-start}
@@ -207,6 +208,8 @@ const pct=(v)=> v==null?"—":v.toFixed(2)+"%";
 const qty=(v)=> v==null?"—":Math.round(v).toLocaleString("en-US")+"주";
 const sQty=(v)=> (v>0?"+":"")+Math.round(v).toLocaleString("en-US")+"주";
 const won=(v)=> v==null?"—":Math.round(v).toLocaleString("en-US")+"원";
+const usd=(v)=> "$"+v.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const priceCell=(h)=> h.price!=null?won(h.price):(h.price_usd!=null?usd(h.price_usd):"—");
 
 function cashRank(h){ const n=h.name||""; if(n.includes("원화")) return 0; if(n.includes("설정")) return 2; return 1; }
 
@@ -277,7 +280,7 @@ function renderTable(holdings,c){
   const cash=holdings.filter(h=>h.is_cash).sort((a,b)=>cashRank(a)-cashRank(b));
   const display=[...stocks,...cash];
   const max=Math.max(1,...stocks.map(h=>h.weight||0));
-  const head=`<div class="row head"><span>#</span><span>티커</span><span>종목명</span><span class="r-qty">보유수량 / 금액</span><span class="r-w">비중</span><span class="r-bar"></span></div>`;
+  const head=`<div class="row head"><span>#</span><span>티커</span><span>종목명</span><span class="r-price">현재가</span><span class="r-qty">보유수량 / 금액</span><span class="r-w">비중</span><span class="r-bar"></span></div>`;
   let n=0;
   const rows=display.map((h)=>{
     if(h.is_cash){
@@ -285,6 +288,7 @@ function renderTable(holdings,c){
         <span class="r-rank num"></span>
         <span class="r-tk num"></span>
         <span class="r-name"><span class="t">${h.name}</span></span>
+        <span class="r-price num">—</span>
         <span class="r-qty num">${won(h.amount)}</span>
         <span class="r-w num">—</span>
         <span class="r-bar"></span></div>`;
@@ -300,6 +304,7 @@ function renderTable(holdings,c){
       <span class="r-rank num">${n}</span>
       <span class="r-tk num">${h.ticker||""}</span>
       <span class="r-name">${badge}<span class="t">${h.name}</span></span>
+      <span class="r-price num">${priceCell(h)}</span>
       <span class="r-qty num">${qty(h.shares)}${dq}</span>
       <span class="r-w num">${pct(h.weight)}</span>
       <span class="r-bar"><i style="width:${Math.max(0,w).toFixed(1)}%"></i></span></div>`;
@@ -517,7 +522,7 @@ async function init(){
 
 function loadDemo(){
   $("#demoBanner").classList.add("show");
-  const mk=(isin,ticker,name,weight,shares)=>({isin,ticker,name,code:ticker+" US Equity",weight,shares,is_cash:false,key:isin});
+  const mk=(isin,ticker,name,weight,shares)=>({isin,ticker,name,code:ticker+" US Equity",weight,shares,price:null,price_usd:Math.round((weight*22+80)*100)/100,is_cash:false,key:isin});
   const cash=(name,amount)=>({isin:name,ticker:"",name,code:"",weight:0,shares:null,amount,is_cash:true,key:name});
   const prev=[
     mk("US5951121038","MU","MICRON TECH",5.5,40),

@@ -13,6 +13,7 @@
       "weight": 6.9964,
       "shares": 52,
       "amount": 83691332.0,
+      "price": null,
       "is_cash": false,
       "key": "US5951121038"
     },
@@ -24,6 +25,7 @@
       "weight": 6.7927,
       "shares": 101,
       "amount": 81254705.0,
+      "price": null,
       "is_cash": false,
       "key": "US0079031078"
     },
@@ -35,6 +37,7 @@
       "weight": 6.4329,
       "shares": 379,
       "amount": 76951215.0,
+      "price": null,
       "is_cash": false,
       "key": "US4581401001"
     },
@@ -46,6 +49,7 @@
       "weight": 6.1355,
       "shares": 25,
       "amount": 73392920.0,
+      "price": null,
       "is_cash": false,
       "key": "US80004C2008"
     },
@@ -57,6 +61,7 @@
       "weight": 5.7843,
       "shares": 138,
       "amount": 69191830.0,
+      "price": null,
       "is_cash": false,
       "key": "US0937121079"
     },
@@ -68,6 +73,7 @@
       "weight": 5.6303,
       "shares": 122,
       "amount": 67349571.0,
+      "price": null,
       "is_cash": false,
       "key": "US0420682058"
     },
@@ -79,6 +85,7 @@
       "weight": 4.4173,
       "shares": 172,
       "amount": 52840375.0,
+      "price": null,
       "is_cash": false,
       "key": "US67066G1040"
     },
@@ -90,6 +97,7 @@
       "weight": 4.2211,
       "shares": 95,
       "amount": 50492631.0,
+      "price": null,
       "is_cash": false,
       "key": "US02079K3059"
     },
@@ -101,6 +109,7 @@
       "weight": 4.0907,
       "shares": 85,
       "amount": 48933401.0,
+      "price": null,
       "is_cash": false,
       "key": "US5128073062"
     },
@@ -112,6 +121,7 @@
       "weight": 3.7327,
       "shares": 67,
       "amount": 44650552.0,
+      "price": null,
       "is_cash": false,
       "key": "US24703L2025"
     },
@@ -123,6 +133,7 @@
       "weight": 3.685,
       "shares": 44,
       "amount": 44079837.0,
+      "price": null,
       "is_cash": false,
       "key": "US9581021055"
     },
@@ -134,6 +145,7 @@
       "weight": 3.506,
       "shares": 27,
       "amount": 41938689.0,
+      "price": null,
       "is_cash": false,
       "key": "IE00BKVD2N49"
     },
@@ -145,6 +157,7 @@
       "weight": 3.3884,
       "shares": 112,
       "amount": 40531944.0,
+      "price": null,
       "is_cash": false,
       "key": "US0231351067"
     },
@@ -156,6 +169,7 @@
       "weight": 3.0361,
       "shares": 85,
       "amount": 36317681.0,
+      "price": null,
       "is_cash": false,
       "key": "US5738741041"
     },
@@ -167,6 +181,7 @@
       "weight": 2.7002,
       "shares": 71,
       "amount": 32300489.0,
+      "price": null,
       "is_cash": false,
       "key": "US0378331005"
     },
@@ -178,6 +193,7 @@
       "weight": 2.3853,
       "shares": 120,
       "amount": 28532772.0,
+      "price": null,
       "is_cash": false,
       "key": "US84615Q1031"
     },
@@ -189,6 +205,7 @@
       "weight": 2.3782,
       "shares": 31,
       "amount": 28448391.0,
+      "price": null,
       "is_cash": false,
       "key": "US0382221051"
     },
@@ -200,6 +217,7 @@
       "weight": 2.1358,
       "shares": 64,
       "amount": 25548831.0,
+      "price": null,
       "is_cash": false,
       "key": "NL0009805522"
     },
@@ -211,6 +229,7 @@
       "weight": 2.0182,
       "shares": 43,
       "amount": 24141707.0,
+      "price": null,
       "is_cash": false,
       "key": "US5949181045"
     },
@@ -222,6 +241,7 @@
       "weight": 2.0094,
       "shares": 41,
       "amount": 24036407.0,
+      "price": null,
       "is_cash": false,
       "key": "US88160R1014"
     },
@@ -233,6 +253,7 @@
       "weight": 1.4897,
       "shares": 14,
       "amount": 17819860.0,
+      "price": null,
       "is_cash": false,
       "key": "US55024U1097"
     },
@@ -244,6 +265,7 @@
       "weight": 1.3072,
       "shares": 6,
       "amount": 15636695.0,
+      "price": null,
       "is_cash": false,
       "key": "USN070592100"
     },
@@ -255,6 +277,7 @@
       "weight": 1.227,
       "shares": 22,
       "amount": 14676852.0,
+      "price": null,
       "is_cash": false,
       "key": "US8807701029"
     },
@@ -266,6 +289,7 @@
       "weight": 1.1732,
       "shares": 40,
       "amount": 14033551.0,
+      "price": null,
       "is_cash": false,
       "key": "US8334451098"
     },
@@ -277,6 +301,7 @@
       "weight": 1.1163,
       "shares": 27,
       "amount": 13353411.0,
+      "price": null,
       "is_cash": false,
       "key": "US82706C1080"
     },
@@ -288,6 +313,7 @@
       "weight": 1.0568,
       "shares": 84,
       "amount": 12641020.0,
+      "price": null,
       "is_cash": false,
       "key": "US7707001027"
     },
@@ -299,6 +325,7 @@
       "weight": 1.0414,
       "shares": 34,
       "amount": 12457793.0,
+      "price": null,
       "is_cash": false,
       "key": "US4824801009"
     },
@@ -310,6 +337,7 @@
       "weight": 0.9572,
       "shares": 62,
       "amount": 11450016.0,
+      "price": null,
       "is_cash": false,
       "key": "US17275R1023"
     },
@@ -321,6 +349,7 @@
       "weight": 0.8382,
       "shares": 17,
       "amount": 10026023.0,
+      "price": null,
       "is_cash": false,
       "key": "US11135F1012"
     },
@@ -332,6 +361,7 @@
       "weight": 0.6262,
       "shares": 16,
       "amount": 7491076.0,
+      "price": null,
       "is_cash": false,
       "key": "US8825081040"
     },
@@ -343,6 +373,7 @@
       "weight": 0.5515,
       "shares": 38,
       "amount": 6597634.0,
+      "price": null,
       "is_cash": false,
       "key": "US69608A1088"
     },
@@ -354,6 +385,7 @@
       "weight": 0.5434,
       "shares": 15,
       "amount": 6499842.0,
+      "price": null,
       "is_cash": false,
       "key": "US6974351057"
     },
@@ -365,6 +397,7 @@
       "weight": 0.5429,
       "shares": 16,
       "amount": 6494294.0,
+      "price": null,
       "is_cash": false,
       "key": "KYG254571055"
     },
@@ -376,6 +409,7 @@
       "weight": 0.4934,
       "shares": 12,
       "amount": 5901812.0,
+      "price": null,
       "is_cash": false,
       "key": "US92537N1081"
     },
@@ -387,6 +421,7 @@
       "weight": 0.4791,
       "shares": 19,
       "amount": 5731525.0,
+      "price": null,
       "is_cash": false,
       "key": "US7475251036"
     },
@@ -398,6 +433,7 @@
       "weight": 0.4747,
       "shares": 52,
       "amount": 5678713.0,
+      "price": null,
       "is_cash": false,
       "key": "US1725731079"
     },
@@ -409,6 +445,7 @@
       "weight": 0.4676,
       "shares": 13,
       "amount": 5593775.0,
+      "price": null,
       "is_cash": false,
       "key": "IL0010823792"
     },
@@ -420,6 +457,7 @@
       "weight": 0.4656,
       "shares": 24,
       "amount": 5569371.0,
+      "price": null,
       "is_cash": false,
       "key": "US19260Q1076"
     },
@@ -431,6 +469,7 @@
       "weight": 0.4561,
       "shares": 9,
       "amount": 5455989.0,
+      "price": null,
       "is_cash": false,
       "key": "US0326541051"
     },
@@ -442,6 +481,7 @@
       "weight": 0.4388,
       "shares": 40,
       "amount": 5249398.0,
+      "price": null,
       "is_cash": false,
       "key": "US7731211089"
     },
@@ -453,6 +493,7 @@
       "weight": 0.4262,
       "shares": 5,
       "amount": 5097895.0,
+      "price": null,
       "is_cash": false,
       "key": "US22788C1053"
     },
@@ -464,6 +505,7 @@
       "weight": 0.2977,
       "shares": 5,
       "amount": 3560983.0,
+      "price": null,
       "is_cash": false,
       "key": "US1717793095"
     },
@@ -475,6 +517,7 @@
       "weight": 0.284,
       "shares": 15,
       "amount": 3397711.0,
+      "price": null,
       "is_cash": false,
       "key": "US34959E1091"
     },
@@ -486,6 +529,7 @@
       "weight": 0.2834,
       "shares": 18,
       "amount": 3390560.0,
+      "price": null,
       "is_cash": false,
       "key": "US3755581036"
     },
@@ -497,6 +541,7 @@
       "weight": 0.2136,
       "shares": 4,
       "amount": 2555251.0,
+      "price": null,
       "is_cash": false,
       "key": "US19247G1076"
     },
@@ -508,6 +553,7 @@
       "weight": 0.1939,
       "shares": 4,
       "amount": 2319756.0,
+      "price": null,
       "is_cash": false,
       "key": "US04626A1034"
     },
@@ -519,6 +565,7 @@
       "weight": 0.1869,
       "shares": 7,
       "amount": 2236068.0,
+      "price": null,
       "is_cash": false,
       "key": "US23804L1035"
     },
@@ -530,6 +577,7 @@
       "weight": 0.1758,
       "shares": 1,
       "amount": 2103012.0,
+      "price": null,
       "is_cash": false,
       "key": "US6098391054"
     },
@@ -541,6 +589,7 @@
       "weight": 0.1441,
       "shares": 4,
       "amount": 1723856.0,
+      "price": null,
       "is_cash": false,
       "key": "NL0009538784"
     },
@@ -552,6 +601,7 @@
       "weight": 0.1117,
       "shares": 10,
       "amount": 1336433.0,
+      "price": null,
       "is_cash": false,
       "key": "KYG393871085"
     },
@@ -563,6 +613,7 @@
       "weight": 0.111,
       "shares": 6,
       "amount": 1327664.0,
+      "price": null,
       "is_cash": false,
       "key": "SG9999000020"
     },
@@ -574,6 +625,7 @@
       "weight": 0.1021,
       "shares": 9,
       "amount": 1221245.0,
+      "price": null,
       "is_cash": false,
       "key": "US5950171042"
     },
@@ -585,6 +637,7 @@
       "weight": 0.0982,
       "shares": 7,
       "amount": 1174872.0,
+      "price": null,
       "is_cash": false,
       "key": "US6821891057"
     },
@@ -596,6 +649,7 @@
       "weight": 0.0866,
       "shares": 7,
       "amount": 1036479.0,
+      "price": null,
       "is_cash": false,
       "key": "US21873S1087"
     },
@@ -607,6 +661,7 @@
       "weight": 0.0618,
       "shares": 2,
       "amount": 739469.0,
+      "price": null,
       "is_cash": false,
       "key": "US3364331070"
     },
@@ -618,6 +673,7 @@
       "weight": 0.0,
       "shares": 1219815837,
       "amount": 1219815837.0,
+      "price": null,
       "is_cash": true,
       "key": "CASH00000001"
     },
@@ -629,6 +685,7 @@
       "weight": 0.0,
       "shares": 23610653,
       "amount": 23610653.0,
+      "price": null,
       "is_cash": true,
       "key": "KRD010010001"
     }

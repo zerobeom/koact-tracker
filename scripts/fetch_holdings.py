@@ -32,6 +32,7 @@ from pathlib import Path
 ETFS = [
     {"slug": "us-nasdaq", "fid": "2ETFQ1", "ticker": "0015B0",
      "name": "KoAct 미국나스닥성장기업액티브", "start": "2025-02-01",
+     "usd_price": True,
      "benchmarks": [
          {"k": "b1", "label": "나스닥종합", "sym": ["IXIC", "YAHOO:^IXIC"]},
          {"k": "b2", "label": "나스닥100", "sym": ["YAHOO:^NDX", "NDX"]},
@@ -157,6 +158,7 @@ def normalize(raw, debug: bool = False):
     cQ = col("수량")
     cW = col("비중")
     cA = col("평가금액", "평가")
+    cP = col("현재가", "현재가(원)")
 
     holdings = []
     for _, r in body.iterrows():
@@ -173,6 +175,7 @@ def normalize(raw, debug: bool = False):
             "weight": to_num(r.get(cW)) if cW else None,
             "shares": to_num(r.get(cQ)) if cQ else None,
             "amount": to_num(r.get(cA)) if cA else None,
+            "price": to_num(r.get(cP)) if cP else None,   # 현재가(원) — 갱신 시점 가격
             "is_cash": is_cash,
             "key": isin or code or name,
         })
@@ -189,6 +192,8 @@ def normalize(raw, debug: bool = False):
             h["weight"] = round(h["weight"], 4)
         if h["shares"] is not None:
             h["shares"] = int(round(h["shares"]))
+        if h["price"] is not None:
+            h["price"] = int(round(h["price"]))   # 현재가(원) 정수
 
     holdings.sort(key=lambda z: (z["weight"] or 0), reverse=True)
     return base_date, holdings
@@ -250,6 +255,37 @@ def diff(cur, prev):
     bought.sort(key=lambda z: z["share_delta"], reverse=True)
     sold.sort(key=lambda z: z["share_delta"])
     return {"added": added, "removed": removed, "bought": bought, "sold": sold}
+
+
+# ── 미국 종목 현재가(달러) ───────────────────────────────────────────────
+def fetch_usd_prices(tickers, end_iso: str):
+    """미국 티커들의 기준일(end_iso) 종가(USD)를 한 번에 받아온다. {ticker: price}."""
+    import yfinance as yf
+    import pandas as pd
+    from datetime import datetime, timedelta
+    tickers = sorted(set(t for t in tickers if t))
+    if not tickers:
+        return {}
+    end = datetime.strptime(end_iso, "%Y-%m-%d")
+    start = (end - timedelta(days=12)).strftime("%Y-%m-%d")
+    endp = (end + timedelta(days=1)).strftime("%Y-%m-%d")
+    data = yf.download(tickers, start=start, end=endp,
+                       progress=False, auto_adjust=False, threads=True)
+    if data is None or len(data) == 0:
+        return {}
+    close = data["Close"] if "Close" in getattr(data, "columns", []) else data
+    out = {}
+    if isinstance(close, pd.Series):
+        s = close.ffill().dropna()
+        if len(s):
+            out[tickers[0]] = float(s.iloc[-1])
+    else:
+        last = close.ffill().iloc[-1]
+        for t in close.columns:
+            v = last.get(t)
+            if v is not None and v == v:        # NaN 제외
+                out[str(t)] = float(v)
+    return out
 
 
 # ── 벤치마크 수익률 ──────────────────────────────────────────────────────
@@ -363,6 +399,19 @@ def process_etf(etf: dict, start: str, debug: bool = False):
     if not holdings:
         print(f"  [skip] 최근 영업일 데이터를 찾지 못함.")
         return
+
+    # 미국 종목 현재가(달러) — 엑셀에 현재가가 없는 종목만
+    if etf.get("usd_price"):
+        try:
+            tks = [h["ticker"] for h in holdings
+                   if not h["is_cash"] and h["ticker"] and h["price"] is None]
+            px = fetch_usd_prices(tks, date_iso)
+            for h in holdings:
+                if h["ticker"] in px:
+                    h["price_usd"] = round(px[h["ticker"]], 2)
+            print(f"  [price] 미국 현재가(USD) {len(px)}/{len(tks)}종목")
+        except Exception as e:
+            print(f"  [price] 미국 현재가 실패(건너뜀): {e}")
 
     prev_dates = [d for d in existing_dates(snap_dir) if d < date_iso]
     prev_date = prev_dates[-1] if prev_dates else None
