@@ -28,8 +28,9 @@
   .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700}
   h1{margin:0;font-size:25px;font-weight:800;letter-spacing:-.01em}
   .code{color:var(--faint);font-weight:600;font-size:15px;margin-left:8px}
-  .datepick{margin-left:auto;display:flex;align-items:center;gap:10px}
-  .datepick label{font-size:12px;color:var(--faint);letter-spacing:.04em}
+  .datepick{margin-left:auto;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+  .pick{display:flex;flex-direction:column;gap:5px}
+  .datepick label{font-size:11px;color:var(--faint);letter-spacing:.04em;font-weight:600}
   select{appearance:none;background:#fff;color:var(--text);
     border:1px solid var(--line);border-radius:10px;padding:9px 34px 9px 13px;
     font:inherit;font-size:14px;font-weight:600;cursor:pointer;
@@ -125,8 +126,10 @@
       <h1>미국나스닥성장기업액티브<span class="code num">0015B0</span></h1>
     </div>
     <div class="datepick">
-      <label for="date">기준일</label>
-      <select id="date" aria-label="기준일 선택"></select>
+      <div class="pick"><label for="date">기준일</label>
+        <select id="date" aria-label="기준일 선택"></select></div>
+      <div class="pick"><label for="base">비교 대상일</label>
+        <select id="base" aria-label="비교 대상일 선택"></select></div>
     </div>
   </header>
 
@@ -258,32 +261,40 @@ function renderTable(holdings,c){
   $("#count").textContent=`${stocks.length}종목`;
 }
 
-function render(snapshot,prevDate,changes){
-  $("#ctx").innerHTML=prevDate
-    ? `<b>${fmtDate(snapshot.date)}</b> 구성 <span class="vs">·</span> 직전 영업일 <b>${fmtDate(prevDate)}</b> 대비 매매`
-    : `<b>${fmtDate(snapshot.date)}</b> 구성 <span class="vs">· 비교할 이전 데이터 없음</span>`;
+function render(snapshot,baseDate,changes){
+  $("#ctx").innerHTML=baseDate
+    ? `<b>${fmtDate(snapshot.date)}</b> 구성 <span class="vs">·</span> <b>${fmtDate(baseDate)}</b> 대비 매매`
+    : `<b>${fmtDate(snapshot.date)}</b> 구성 <span class="vs">· 비교 대상일 없음</span>`;
   renderBand(changes); renderChangeLists(changes); renderTable(snapshot.holdings,changes);
 }
 
 async function jget(url){ const r=await fetch(url,{cache:"no-store"}); if(!r.ok) throw new Error(url); return r.json(); }
 const snapshotOf=(iso)=>jget(`./data/snapshots/${iso}.json`);
 
-async function selectDate(iso,dates){
-  const snap=await snapshotOf(iso);
-  const idx=dates.indexOf(iso), prevDate=idx>0?dates[idx-1]:null;
-  let prev=null;
-  if(prevDate){ try{ prev=(await snapshotOf(prevDate)).holdings; }catch(e){} }
-  render(snap,prevDate,computeDiff(snap.holdings,prev));
+let DATES=[];
+async function recompute(){
+  const cur=$("#date").value;
+  const base=$("#base").value;
+  const snap=await snapshotOf(cur);
+  let prev=null, baseDate=null;
+  if(base && base!==cur){
+    try{ prev=(await snapshotOf(base)).holdings; baseDate=base; }catch(e){}
+  }
+  render(snap,baseDate,computeDiff(snap.holdings,prev));
 }
 
 async function init(){
   try{
-    const dates=await jget("./data/dates.json");
-    if(!dates.length) throw new Error("empty");
-    const sel=$("#date");
-    sel.innerHTML=dates.slice().reverse().map(d=>`<option value="${d}">${fmtDate(d)}</option>`).join("");
-    sel.onchange=()=>selectDate(sel.value,dates);
-    await selectDate(dates[dates.length-1],dates);
+    DATES=await jget("./data/dates.json");
+    if(!DATES.length) throw new Error("empty");
+    const opts=DATES.slice().reverse().map(d=>`<option value="${d}">${fmtDate(d)}</option>`).join("");
+    $("#date").innerHTML=opts;
+    $("#base").innerHTML=`<option value="">— 비교 안 함 —</option>`+opts;
+    $("#date").value=DATES[DATES.length-1];
+    $("#base").value=DATES.length>1?DATES[DATES.length-2]:"";
+    $("#date").onchange=recompute;
+    $("#base").onchange=recompute;
+    await recompute();
   }catch(e){ loadDemo(); }
 }
 
@@ -312,6 +323,7 @@ function loadDemo(){
     cash("원화현금",23610653),
   ];
   $("#date").innerHTML=`<option>2026.06.26 (데모)</option><option>2026.06.25 (데모)</option>`;
+  $("#base").innerHTML=`<option>2026.06.25 (데모)</option><option value="">— 비교 안 함 —</option>`;
   render({date:"2026-06-26",holdings:cur},"2026-06-25",computeDiff(cur,prev));
 }
 
