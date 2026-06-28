@@ -121,6 +121,23 @@
   .detail-note{margin-top:10px;font-size:12px;color:var(--faint)}
   @media(max-width:720px){ .charts{grid-template-columns:1fr} }
 
+  .perf{margin-top:28px}
+  .perf-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .perf-head h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .perf-sub{font-size:12px;color:var(--faint)}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin:6px 0 12px;font-size:13px;color:var(--muted)}
+  .legend .lg{display:inline-flex;align-items:center;gap:7px}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;flex-shrink:0}
+  .legend b{color:var(--text);font-weight:800}
+  .legend .pos{color:var(--in);font-weight:700}
+  .legend .neg{color:var(--out);font-weight:700}
+  .linewrap{border:1px solid var(--line);border-radius:14px;padding:12px 10px 6px;background:var(--panel)}
+  .linesvg{width:100%;height:auto;display:block}
+  .linesvg .grid{stroke:var(--line);stroke-width:1}
+  .linesvg .zero{stroke:#C2C9D4;stroke-width:1;stroke-dasharray:3 3}
+  .linesvg .yl,.linesvg .xl{font-size:10px;fill:var(--faint)}
+  .perf-foot{margin-top:9px;font-size:11px;color:var(--faint);line-height:1.6}
+
   footer{margin-top:34px;font-size:12px;color:var(--faint);line-height:1.7}
   .demo-banner{margin-top:22px;background:var(--out-dim);border:1px solid #F3C9C9;
     color:#B42318;border-radius:12px;padding:11px 15px;font-size:13px;display:none}
@@ -164,6 +181,8 @@
 
   <section class="band" id="band"></section>
   <section class="changes" id="changeLists"></section>
+
+  <section class="perf" id="perf" style="display:none"></section>
 
   <div class="tablehead">
     <h2>전체 구성종목</h2>
@@ -287,6 +306,72 @@ function renderTable(holdings,c){
   $("#count").textContent=`${stocks.length}종목`;
 }
 
+// ── 벤치마크 수익률 비교 (선그래프) ──────────────────────────────────────
+const ETF_COLOR="#111827";
+const BM_PALETTE=["#6366F1","#0EA5E9","#F59E0B"];
+const fmtRet=(v)=> v==null?"—":((v>0?"+":"")+v.toFixed(1)+"%");
+function bmColors(perf){
+  const c={etf:ETF_COLOR};
+  perf.benchmarks.forEach((b,i)=>c[b.k]=BM_PALETTE[i%BM_PALETTE.length]);
+  return c;
+}
+
+function lineChartSVG(perf){
+  const s=perf.series, n=s.length, col=bmColors(perf);
+  const keys=["etf",...perf.benchmarks.map(b=>b.k)];
+  let vals=[]; s.forEach(r=>keys.forEach(k=>{ if(r[k]!=null) vals.push(r[k]); }));
+  let mn=Math.min(0,...vals), mx=Math.max(0,...vals);
+  const pad=((mx-mn)*0.12)||1; mn-=pad; mx+=pad;
+  const W=720,H=260,L=46,R=14,T=14,B=28, iw=W-L-R, ih=H-T-B;
+  const X=i=> n<=1? L+iw/2 : L+(i/(n-1))*iw;
+  const Y=v=> T+(1-(v-mn)/(mx-mn))*ih;
+  let g="";
+  [mx,0,mn].forEach(v=>{ const y=Y(v);
+    g+=`<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" class="${v===0?'zero':'grid'}"/>`+
+       `<text x="${L-7}" y="${(y+3).toFixed(1)}" text-anchor="end" class="yl">${v>0?'+':''}${v.toFixed(0)}%</text>`;
+  });
+  keys.forEach(k=>{
+    let d="",on=false;
+    s.forEach((r,i)=>{ const v=r[k]; if(v==null) return; d+=(on?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)+" "; on=true; });
+    if(d) g+=`<path d="${d}" fill="none" stroke="${col[k]}" stroke-width="${k==='etf'?2.6:1.6}" stroke-linejoin="round" stroke-linecap="round"/>`;
+  });
+  const every=Math.max(1,Math.ceil(n/8));
+  s.forEach((r,i)=>{ if(i%every===0||i===n-1) g+=`<text x="${X(i).toFixed(1)}" y="${H-9}" text-anchor="middle" class="xl">${r.month.slice(2)}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" class="linesvg" preserveAspectRatio="xMidYMid meet">${g}</svg>`;
+}
+
+function perfLegend(perf){
+  const col=bmColors(perf), last=perf.series[perf.series.length-1], etfv=last.etf;
+  let h=`<span class="lg"><i style="background:${ETF_COLOR}"></i>${perf.etf_label} <b>${fmtRet(etfv)}</b></span>`;
+  perf.benchmarks.forEach(b=>{
+    const v=last[b.k], diff=(etfv!=null&&v!=null)?etfv-v:null;
+    const tag=diff==null?"":` <span class="${diff>=0?'pos':'neg'}">(${diff>=0?'▲':'▼'}${Math.abs(diff).toFixed(1)}%p)</span>`;
+    h+=`<span class="lg"><i style="background:${col[b.k]}"></i>${b.label} <b>${fmtRet(v)}</b>${tag}</span>`;
+  });
+  return h;
+}
+
+function renderPerf(perf){
+  const box=$("#perf");
+  if(!perf||!perf.series||!perf.series.length){ box.style.display="none"; box.innerHTML=""; return; }
+  const fx=(curEtf&&curEtf.slug==="us-nasdaq")
+    ? "지수는 현지통화(달러), ETF는 원화 기준 수익률이라 환율 효과가 포함됩니다. " : "";
+  const body=perf.series.length<2
+    ? `<div class="detail-note">아직 한 시점뿐이에요. 매월 말 데이터가 쌓이면 추이선이 그려져요.</div>`
+    : `<div class="linewrap">${lineChartSVG(perf)}</div>`;
+  box.innerHTML=
+    `<div class="perf-head"><h2>벤치마크 수익률 비교</h2>`+
+    `<span class="perf-sub">${(perf.base||"").replace("-",".")} 기준 누적수익률 · 월별</span></div>`+
+    `<div class="legend">${perfLegend(perf)}</div>${body}`+
+    `<div class="perf-foot">${fx}매월 마지막 거래일 종가 기준. 정보 제공용이며 투자 권유가 아닙니다.</div>`;
+  box.style.display="block";
+}
+
+async function loadPerf(slug){
+  try{ renderPerf(await jget(`./data/${slug}/perf.json`)); }
+  catch(e){ const b=$("#perf"); b.style.display="none"; b.innerHTML=""; }
+}
+
 // ── 종목 클릭 시 월별 추이 차트 ───────────────────────────────────────────
 let CURVIEW={slug:null,snap:null};
 const SNAPCACHE=new Map();
@@ -383,6 +468,7 @@ function showEmpty(){
   $("#date").innerHTML=""; $("#base").innerHTML="";
   $("#ctx").innerHTML=`<b>${stripKoact(curEtf.name)}</b> <span class="vs">· 아직 수집된 데이터가 없어요</span>`;
   $("#band").innerHTML=""; $("#changeLists").innerHTML="";
+  const pb=$("#perf"); pb.style.display="none"; pb.innerHTML="";
   $("#table").innerHTML=`<div style="padding:26px 16px;color:var(--muted);text-align:center;font-size:13px;line-height:1.7">이 ETF는 아직 데이터가 없습니다.<br>GitHub 저장소의 <b>Actions → Run workflow</b>를 한 번 실행하면 채워집니다.</div>`;
 }
 
@@ -410,6 +496,7 @@ async function selectEtf(slug){
   $("#date").value=DATES[DATES.length-1];
   $("#base").value=DATES.length>1?DATES[DATES.length-2]:"";
   await recompute();
+  loadPerf(curEtf.slug);
 }
 
 async function init(){
