@@ -56,7 +56,8 @@
   .stat.sell .v{color:var(--out)} .stat.sell .dot{background:var(--out)}
   .stat .sub{font-size:11px;color:var(--faint);margin-top:2px}
 
-  .changes{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .changes{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .changes .col{display:flex;flex-direction:column;gap:12px}
   .clist{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
   .clist h3{margin:0 0 10px;font-size:12px;letter-spacing:.04em;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:7px}
   .clist h3 .tag{font-size:11px;padding:1px 7px;border-radius:20px;font-weight:800}
@@ -74,7 +75,7 @@
   .tablehead h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em}
   .tablehead .count{font-size:13px;color:var(--muted)}
   .table{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
-  .row{display:grid;grid-template-columns:28px 54px 1fr 132px 88px 96px;align-items:center;gap:12px;
+  .row{display:grid;grid-template-columns:28px 54px 1fr 168px 84px 96px;align-items:center;gap:12px;
     padding:11px 16px;border-bottom:1px solid var(--line);position:relative}
   .row:last-child{border-bottom:0}
   .row.head{background:var(--panel2);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
@@ -94,7 +95,7 @@
   .badge.new{background:var(--in-dim);color:var(--in)}
   .badge.buy{background:var(--in-dim);color:var(--in)}
   .badge.sell{background:var(--out-dim);color:var(--out)}
-  .r-qty{text-align:right;font-weight:700;color:var(--text)}
+  .r-qty{text-align:right;font-weight:700;color:var(--text);white-space:nowrap}
   .r-qty .dq{display:block;font-size:11px;font-weight:700;margin-top:1px}
   .dq.pos{color:var(--in)} .dq.neg{color:var(--out)}
   .r-w{text-align:right;font-weight:600;color:var(--muted)}
@@ -111,7 +112,7 @@
   @media (max-width:720px){
     .band{grid-template-columns:1fr 1fr}
     .changes{grid-template-columns:1fr}
-    .row{grid-template-columns:24px 50px 1fr 110px 72px}
+    .row{grid-template-columns:24px 50px 1fr 132px 64px}
     .row .r-bar{display:none}
     h1{font-size:21px}
     .datepick{margin-left:0;width:100%}
@@ -222,10 +223,14 @@ function clist(title,tagcls,items,fn){
 }
 function renderChangeLists(c){
   $("#changeLists").innerHTML=
-    clist("편입 (신규 매수)","in",c.added,liEntry)+
-    clist("편출 (전량 매도)","out",c.removed,liEntry)+
-    clist("추가매수 (수량↑)","in",c.bought,liTrade)+
-    clist("일부매도 (수량↓)","out",c.sold,liTrade);
+    `<div class="col">`+
+      clist("편입 (신규 매수)","in",c.added,liEntry)+
+      clist("편출 (전량 매도)","out",c.removed,liEntry)+
+    `</div>`+
+    `<div class="col">`+
+      clist("추가매수 (수량↑)","in",c.bought,liTrade)+
+      clist("일부매도 (수량↓)","out",c.sold,liTrade)+
+    `</div>`;
 }
 
 function renderTable(holdings,c){
