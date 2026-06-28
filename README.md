@@ -1,24 +1,34 @@
-# KoAct 미국나스닥성장기업액티브 (0015B0) 구성종목 변동 추적기
+# KoAct ETF 구성종목 변동 추적기
 
 삼성액티브자산운용 **투자종목정보(PDF) 엑셀**을 매 영업일 자동으로 받아와,
-**전일 대비 편입·편출·비중 증감**을 웹페이지로 보여줍니다. 운용사 팩트시트(상위 종목만)와 달리
-이 엑셀은 **전 종목**을 담고 있어, 전체 구성 변화를 빠짐없이 추적합니다.
-한 번 세팅하면 손대지 않아도 매일 알아서 갱신됩니다.
+**전일 대비 편입·편출·추가매수·일부매도**를 웹페이지로 보여줍니다. 비중은 주가 등락만으로도
+변하지만 **수량(주식 수)은 매니저가 실제로 매매해야만 바뀌므로**, 보유수량과 변동수량(+/−주)을
+중심에 두고 비중은 보조 지표로 함께 표시합니다. 운용사 팩트시트(상위 종목만)와 달리 이 엑셀은
+**전 종목**을 담고 있어, 전체 구성 변화를 빠짐없이 추적합니다.
+한 화면에서 **여러 ETF를 골라** 볼 수 있고, 한 번 세팅하면 손대지 않아도 매일 갱신됩니다.
+
+현재 추적 대상:
+- **KoAct 미국나스닥성장기업액티브** (`0015B0`, 펀드ID `2ETFQ1`)
+- **KoAct 코리아밸류업액티브** (`495230`, 펀드ID `2ETFP3`)
 
 ```
 koact-tracker/
 ├─ index.html                  # 보여주는 사이트 (GitHub Pages)
-├─ scripts/fetch_holdings.py   # 엑셀 다운로드 + 파싱 + 변동 계산
+├─ scripts/fetch_holdings.py   # 엑셀 다운로드 + 파싱 + 변동 계산 (모든 ETF)
 ├─ .github/workflows/update.yml# 매 영업일 자동 실행
 ├─ requirements.txt
 └─ data/                       # 자동 생성/갱신되는 데이터(JSON)
-   ├─ latest.json
-   ├─ dates.json
-   └─ snapshots/YYYY-MM-DD.json   # 2026-06-26 한 건이 미리 들어있음(예시)
+   ├─ etfs.json                # 사이트가 읽는 ETF 목록
+   ├─ us-nasdaq/               # ETF별 폴더 (slug 기준)
+   │  ├─ latest.json
+   │  ├─ dates.json
+   │  └─ snapshots/YYYY-MM-DD.json   # 2026-06-26 한 건이 미리 들어있음(예시)
+   └─ kr-valueup/
+      └─ snapshots/                  # 첫 Action 실행 시 채워짐
 ```
 
 **데이터 소스**
-`https://www.samsungactive.co.kr/excel_pdf.do?fId=2ETFQ1&gijunYMD=YYYYMMDD`
+`https://www.samsungactive.co.kr/excel_pdf.do?fId={펀드ID}&gijunYMD=YYYYMMDD`
 → 구형 `.xls`(BIFF) 파일. 컬럼: 번호 · 종목명 · **ISIN** · 종목코드 · 수량 · 비중(%) · 평가금액 …
 종목 식별은 **ISIN**을 키로 사용합니다(이름이 조금 바뀌어도 안전).
 
@@ -75,13 +85,14 @@ for d in 20260623 20260624 20260625 20260626; do python scripts/fetch_holdings.p
 
 | 바꾸고 싶은 것 | 위치 |
 |---|---|
-| 추적할 ETF | `scripts/fetch_holdings.py`의 `FID`(운용사 펀드 ID)·`TICKER`·`ETF_NAME` |
+| 추적 ETF 추가/변경 | `scripts/fetch_holdings.py` 상단의 `ETFS` 목록에 `{slug, fid, ticker, name}` 한 줄 추가 |
 | 비중 증감 민감도 | 같은 파일의 `WEIGHT_EPS` (기본 0.05%p) |
 | 파일 없을 때 후퇴 일수 | 같은 파일의 `LOOKBACK_DAYS` (기본 7일) |
 | 자동 실행 시각 | `.github/workflows/update.yml`의 `cron` (UTC 기준, `0 9`=18시 KST) |
 | 색/디자인 | `index.html` 상단 `:root` CSS 변수 |
 
-> 다른 KoAct ETF의 `FID`는 해당 상품 페이지 주소 `etf/view.do?id=____` 의 값과 같습니다.
+> 다른 KoAct ETF의 `fid`는 해당 상품 페이지 주소 `etf/view.do?id=____` 의 값과 같습니다.
+> `slug`은 폴더명으로 쓰이는 영문 식별자라 ETF마다 겹치지 않게 정하면 됩니다(예: `kr-dividend`).
 
 ---
 
