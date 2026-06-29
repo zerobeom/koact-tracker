@@ -427,6 +427,7 @@ def process_etf(etf: dict, start: str, debug: bool = False):
     latest = dict(snap)
     latest["prev_date"] = prev_date
     latest["changes"] = diff(holdings, prev)
+    latest["updated_at"] = datetime.now(KST).strftime("%Y-%m-%d %H:%M")  # 갱신 시각(KST)
     (edir / "latest.json").write_text(
         json.dumps(latest, ensure_ascii=False, indent=2), encoding="utf-8")
     (edir / "dates.json").write_text(

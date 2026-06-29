@@ -28,6 +28,13 @@
   .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700}
   h1{margin:0;font-size:25px;font-weight:800;letter-spacing:-.01em}
   .code{color:var(--faint);font-weight:600;font-size:15px;margin-left:8px}
+  .updwrap{margin-top:9px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .upd{appearance:none;border:1px solid var(--line);background:#fff;color:var(--text);font:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:9px;cursor:pointer}
+  .upd:hover{background:#F5F7F9}
+  .upd:active{transform:translateY(1px)}
+  .updhint{font-size:11px;color:var(--faint)}
+  .updnote{margin-top:5px;font-size:11px;color:var(--faint);line-height:1.5}
+  .updstamp{margin-top:3px;font-size:11px;color:var(--muted);font-weight:600}
   .datepick{margin-left:auto;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
   .pick{display:flex;flex-direction:column;gap:5px}
   .datepick label{font-size:11px;color:var(--faint);letter-spacing:.04em;font-weight:600}
@@ -110,7 +117,7 @@
   .detail{border-bottom:1px solid var(--line);background:#FBFCFE}
   .detail-load{padding:18px 16px;color:var(--muted);font-size:13px}
   .detail-inner{padding:14px 16px 18px}
-  .detail-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .detail-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
   .dh-tk{font-weight:800;font-size:14px} .dh-nm{color:var(--muted);font-size:13px}
   .dh-sub{margin-left:auto;color:var(--faint);font-size:11px}
   .charts{display:grid;grid-template-columns:1fr 1fr;gap:18px}
@@ -169,6 +176,9 @@
     <div class="brand">
       <span class="eyebrow">KoAct · 일별 구성종목 추적</span>
       <h1 id="etfTitle">미국나스닥성장기업액티브<span class="code num">0015B0</span></h1>
+      <div class="updwrap"><button id="updateBtn" class="upd" type="button">🔄 데이터 업데이트</button><span id="updHint" class="updhint"></span></div>
+      <div class="updnote">자동 갱신: 매 영업일(월–금) 18:00(KST) · 버튼 수동 실행 시 데이터 반영까지 1~2분 정도 걸려요</div>
+      <div class="updstamp" id="lastUpd"></div>
     </div>
     <div class="datepick">
       <div class="pick"><label for="etf">ETF</label>
@@ -186,6 +196,7 @@
 
   <section class="perf" id="perf" style="display:none"></section>
 
+  <div class="tablehead"><h2>구성종목 변동 내역</h2></div>
   <p class="ctx" id="ctx"></p>
   <p class="note">수량(주식 수)은 매니저가 실제로 매매해야만 바뀝니다. <b>비중</b>은 주가 등락만으로도 변할 수 있어 보조 지표로 표시합니다.</p>
 
@@ -453,18 +464,38 @@ function barSVG(pts,getV,fmt,color,hi){
   return `<svg viewBox="0 0 ${W} ${H}" class="barsvg" preserveAspectRatio="xMidYMid meet">${g}</svg>`;
 }
 
-function detailHTML(ticker,name,pts){
-  const note=pts.length<2
-    ? `<div class="detail-note">아직 ${pts.length}개월치 데이터뿐이에요. 매월 말 데이터가 쌓이면 추이가 그려져요.</div>` : "";
+let STOCKMODE="month", CURDETAIL=null;
+function ptsByMode(pts){
+  if(STOCKMODE!=="year"||!pts||pts.length<=1) return pts||[];
+  const byYear=new Map();
+  pts.forEach(p=>byYear.set(p.date.slice(0,4),p));
+  const seen=new Set(),out=[];
+  [pts[0],...byYear.values()].sort((a,b)=>a.date<b.date?-1:1).forEach(p=>{ if(!seen.has(p.date)){ seen.add(p.date); out.push(p); } });
+  return out;
+}
+function detailInner(){
+  const {ticker,name,pts}=CURDETAIL;
+  const view=ptsByMode(pts);
+  const modeLabel=STOCKMODE==="year"?"연도별 · 매년 마지막 거래일":"월별 · 매월 마지막 거래일";
+  const seg=`<div class="seg sseg"><button class="${STOCKMODE==='month'?'on':''}" data-m="month">월별</button><button class="${STOCKMODE==='year'?'on':''}" data-m="year">연도별</button></div>`;
+  const note=view.length<2
+    ? `<div class="detail-note">아직 한 시점뿐이에요. 데이터가 쌓이면 추이가 그려져요.</div>` : "";
   return `<div class="detail-inner">
-    <div class="detail-head"><span class="dh-tk">${ticker||""}</span><span class="dh-nm">${name||""}</span><span class="dh-sub">월별 추이 · 매월 마지막 거래일</span></div>
+    <div class="detail-head"><span class="dh-tk">${ticker||""}</span><span class="dh-nm">${name||""}</span><span class="dh-sub">${modeLabel}</span>${seg}</div>
     <div class="charts">
-      <div class="chart"><div class="chart-t">비중 (%)</div>${barSVG(pts,p=>p.weight,v=>v.toFixed(1)+"%","#6366F1","#3730A3")}</div>
-      <div class="chart"><div class="chart-t">보유수량 (주)</div>${barSVG(pts,p=>p.shares,v=>Math.round(v).toLocaleString("en-US"),"#0E9E6E","#0A7150")}</div>
+      <div class="chart"><div class="chart-t">비중 (%)</div>${barSVG(view,p=>p.weight,v=>v.toFixed(1)+"%","#6366F1","#3730A3")}</div>
+      <div class="chart"><div class="chart-t">보유수량 (주)</div>${barSVG(view,p=>p.shares,v=>Math.round(v).toLocaleString("en-US"),"#0E9E6E","#0A7150")}</div>
     </div>${note}</div>`;
 }
 
 async function onRowClick(e){
+  const segBtn=e.target.closest(".sseg button");
+  if(segBtn){
+    STOCKMODE=segBtn.getAttribute("data-m");
+    const det=document.querySelector(".detail");
+    if(det && CURDETAIL) det.innerHTML=detailInner();
+    return;
+  }
   const row=e.target.closest(".row[data-key]");
   if(!row) return;
   const next=row.nextElementSibling;
@@ -477,7 +508,8 @@ async function onRowClick(e){
   row.after(det);
   try{
     const pts=await buildSeries(row.getAttribute("data-key"));
-    det.innerHTML=detailHTML(row.getAttribute("data-ticker"),row.getAttribute("data-name"),pts);
+    CURDETAIL={ticker:row.getAttribute("data-ticker"),name:row.getAttribute("data-name"),pts:pts};
+    det.innerHTML=detailInner();
   }catch(err){ det.innerHTML=`<div class="detail-load">데이터를 불러오지 못했어요.</div>`; }
 }
 
@@ -504,6 +536,7 @@ function showEmpty(){
   $("#ctx").innerHTML=`<b>${stripKoact(curEtf.name)}</b> <span class="vs">· 아직 수집된 데이터가 없어요</span>`;
   $("#band").innerHTML=""; $("#changeLists").innerHTML="";
   const pb=$("#perf"); pb.style.display="none"; pb.innerHTML="";
+  $("#lastUpd").textContent="";
   $("#table").innerHTML=`<div style="padding:26px 16px;color:var(--muted);text-align:center;font-size:13px;line-height:1.7">이 ETF는 아직 데이터가 없습니다.<br>GitHub 저장소의 <b>Actions → Run workflow</b>를 한 번 실행하면 채워집니다.</div>`;
 }
 
@@ -532,6 +565,11 @@ async function selectEtf(slug){
   $("#base").value=DATES.length>1?DATES[DATES.length-2]:"";
   await recompute();
   loadPerf(curEtf.slug);
+  try{
+    const latest=await jget(`./data/${curEtf.slug}/latest.json`);
+    const u=latest&&latest.updated_at;
+    $("#lastUpd").textContent = u ? `마지막 갱신: ${u} (KST)` : "";
+  }catch(e){ $("#lastUpd").textContent=""; }
 }
 
 async function init(){
@@ -582,6 +620,16 @@ $("#perf").addEventListener("click",function(e){
   var b=e.target.closest(".seg button"); if(!b) return;
   PERFMODE=b.getAttribute("data-m"); renderPerf();
 });
+(function(){
+  var btn=document.getElementById("updateBtn"); if(!btn) return;
+  btn.onclick=function(){
+    var host=location.hostname, segs=location.pathname.split("/").filter(Boolean), url=null;
+    if(host.indexOf("github.io")>-1){ var owner=host.split(".")[0], repo=segs[0];
+      if(owner&&repo) url="https://github.com/"+owner+"/"+repo+"/actions/workflows/update.yml"; }
+    if(url){ window.open(url,"_blank"); document.getElementById("updHint").textContent="GitHub에서 ‘Run workflow’ 클릭 → 1~2분 뒤 이 페이지 새로고침"; }
+    else { document.getElementById("updHint").textContent="GitHub 저장소 Actions 탭에서 ‘Run workflow’를 실행하세요."; }
+  };
+})();
 init();
 </script>
 </body>
