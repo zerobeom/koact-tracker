@@ -797,13 +797,5 @@
       "is_cash": true,
       "key": "KRD010010001"
     }
-  ],
-  "prev_date": "2026-06-26",
-  "changes": {
-    "added": [],
-    "removed": [],
-    "bought": [],
-    "sold": []
-  },
-  "updated_at": "2026-06-29 19:27"
+  ]
 }
