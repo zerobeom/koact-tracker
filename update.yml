@@ -1,0 +1,43 @@
+name: Update KoAct holdings
+
+on:
+  schedule:
+    - cron: "0 21 * * 0-4"   # 매 영업일 06:00 KST (UTC 전날 21:00, 일~목 UTC)
+    - cron: "0 9 * * 1-5"    # 매 영업일 18:00 KST (UTC 09:00, 월~금 UTC)
+  workflow_dispatch:        # 저장소 Actions 탭에서 수동 실행 가능
+
+permissions:
+  contents: write           # 데이터 커밋을 위해 필요
+
+concurrency:
+  group: update-holdings
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch holdings
+        run: python scripts/fetch_holdings.py
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --staged --quiet; then
+            echo "변동 없음 — 커밋 생략"
+          else
+            git commit -m "data: update $(TZ=Asia/Seoul date +%Y-%m-%d)"
+            git push
+          fi
