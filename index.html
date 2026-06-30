@@ -156,6 +156,18 @@
   .barsvg .bv{font-size:11px;fill:var(--muted);font-weight:700}
   .barsvg .bx{font-size:10px;fill:var(--faint)}
   .barsvg .axis{stroke:var(--line);stroke-width:1}
+  .barsvg .ay{font-size:10px;font-weight:700}
+  .barsvg .aw{fill:#6366F1}
+  .barsvg .aq{fill:#0E9E6E}
+  .barsvg .zeroR{stroke:#F4B73E;stroke-width:1;stroke-dasharray:3 3;opacity:.7}
+  .barsvg .rlbl{font-size:9px;fill:#B97400;font-weight:700}
+  .barsvg .newtag{font-size:9px;fill:var(--in);font-weight:800}
+  .clegend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:2px 0 10px;font-size:12px;color:var(--muted)}
+  .clegend .lg{display:inline-flex;align-items:center;gap:6px}
+  .clegend i{width:11px;height:11px;border-radius:3px;display:inline-block;flex-shrink:0}
+  .clegend i.ln{width:15px;height:0;border:0;border-top:2px solid #F59E0B;border-radius:0}
+  .combo{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;padding:8px 6px;background:var(--panel)}
+  .combosvg{display:block}
   .detail-note{margin-top:10px;font-size:12px;color:var(--faint)}
   @media(max-width:720px){ .charts{grid-template-columns:1fr} }
 
@@ -446,7 +458,7 @@ async function loadPerf(slug){
   renderPerf();
 }
 
-// ── 종목 클릭 시 월별 추이 차트 ───────────────────────────────────────────
+// ── 종목 클릭 시 추이 차트 (주별/월별/연도별 · 콤보) ───────────────────────
 let CURVIEW={slug:null,snap:null};
 const SNAPCACHE=new Map();
 async function getHoldings(slug,iso){
@@ -455,16 +467,32 @@ async function getHoldings(slug,iso){
   const h=(await snapshotOf(slug,iso)).holdings;
   SNAPCACHE.set(ck,h); return h;
 }
-function monthEndDates(dates){
-  const m=new Map();                       // YYYY-MM -> 그 달의 마지막(최신) 거래일
-  for(const d of dates){ const k=d.slice(0,7); if(!m.has(k)||d>m.get(k)) m.set(k,d); }
+
+// 날짜를 버킷 키로: 주별=그 주 월요일, 월별=YYYY-MM, 연도별=YYYY
+function bucketKey(iso,mode){
+  if(mode==="year") return iso.slice(0,4);
+  if(mode==="week"){
+    const [y,m,d]=iso.split("-").map(Number);
+    const dt=new Date(Date.UTC(y,m-1,d));
+    const dow=dt.getUTCDay();                 // 0=일 … 6=토
+    dt.setUTCDate(dt.getUTCDate()+(dow===0?-6:1-dow));  // 그 주 월요일로
+    return dt.toISOString().slice(0,10);
+  }
+  return iso.slice(0,7);                       // 월별
+}
+// 각 버킷의 마지막(최신) 거래일만 추림
+function bucketEnds(dates,mode){
+  const m=new Map();
+  for(const d of dates){ const k=bucketKey(d,mode); if(!m.has(k)||d>m.get(k)) m.set(k,d); }
   return [...m.values()].sort();
 }
-const monthLbl=(iso)=> iso.slice(2,7).replace("-",".");   // 2026-06-26 -> 26.06
+const lblOf=(iso,mode)=> mode==="year" ? iso.slice(0,4)
+  : mode==="week" ? iso.slice(5).replace("-",".")   // 06-26 -> 06.26
+  : iso.slice(2,7).replace("-",".");                // 2026-06 -> 26.06
 
-async function buildSeries(key){
+async function buildSeries(key,mode){
   const slug=CURVIEW.slug;
-  const dates = (DATES&&DATES.length)? monthEndDates(DATES) : [CURVIEW.snap.date];
+  const dates = (DATES&&DATES.length)? bucketEnds(DATES,mode) : [CURVIEW.snap.date];
   const pts=[];
   for(const d of dates){
     let holds;
@@ -473,47 +501,98 @@ async function buildSeries(key){
     const h=holds.find(x=>keyOf(x)===key);
     pts.push({date:d, weight:h?(h.weight||0):0, shares:h?(h.shares||0):0});
   }
+  // 주식수 변화율(%) — 직전 버킷(전주/전월/전년 마지막 거래일) 대비
+  for(let i=0;i<pts.length;i++){
+    if(i===0){ pts[i].rate=null; pts[i].isNew=false; continue; }
+    const ps=pts[i-1].shares, cs=pts[i].shares;
+    if(ps>0){ pts[i].rate=(cs-ps)/ps*100; pts[i].isNew=false; }
+    else { pts[i].rate=null; pts[i].isNew=(cs>0); }   // 직전 미보유 → 신규 편입
+  }
   return pts;
 }
 
-function barSVG(pts,getV,fmt,color,hi){
+// 비중(막대·왼쪽축) + 보유수량(막대·오른쪽축) + 변화율(선·자체스케일) 한 차트
+function comboChartSVG(pts,mode){
   const n=pts.length||1;
-  const W=Math.max(260,n*54), H=172, padT=22, padB=26, padX=10;
-  const innerH=H-padT-padB, slot=(W-padX*2)/n, bw=Math.min(34,slot*0.6);
-  const vals=pts.map(getV), max=Math.max(...vals,0)||1;
-  const showVal=n<=14, lblEvery=n>18?Math.ceil(n/12):1;
-  let g=`<line x1="${padX}" y1="${padT+innerH}" x2="${W-padX}" y2="${padT+innerH}" class="axis"/>`;
+  const slotW=Math.max(34,Math.min(64,560/n));
+  const padL=46, padR=56, padT=30, padB=34;
+  const W=Math.max(360, Math.round(n*slotW)+padL+padR), H=250;
+  const plotW=W-padL-padR, innerH=H-padT-padB, yB=padT+innerH;
+  const wMax=Math.max(0,...pts.map(p=>p.weight))||1;
+  const qMax=Math.max(0,...pts.map(p=>p.shares))||1;
+  const rs=pts.map(p=>p.rate).filter(v=>v!=null&&isFinite(v));
+  const hasRate=rs.length>0;
+  let rMin=Math.min(0,...rs), rMax=Math.max(0,...rs);
+  if(rMin===rMax){ rMin-=1; rMax+=1; }
+  const slot=plotW/n;
+  const cx=i=> padL + i*slot + slot/2;
+  const yW=v=> yB-(v/wMax)*innerH;
+  const yQ=v=> yB-(v/qMax)*innerH;
+  const yR=v=> padT+(1-(v-rMin)/(rMax-rMin))*innerH;
+  const bw=Math.max(5,Math.min(15,slot*0.3));
+  const showVal=n<=12, lblEvery=n>16?Math.ceil(n/12):1;
+  let g="";
+  g+=`<line x1="${padL}" y1="${yB}" x2="${W-padR}" y2="${yB}" class="axis"/>`;
+  // 좌(비중%)·우(보유수량) 축 눈금
+  g+=`<text x="${padL-6}" y="${padT+4}" text-anchor="end" class="ay aw">${wMax.toFixed(1)}%</text>`;
+  g+=`<text x="${padL-6}" y="${yB+3}" text-anchor="end" class="ay aw">0</text>`;
+  g+=`<text x="${W-padR+6}" y="${padT+4}" text-anchor="start" class="ay aq">${Math.round(qMax).toLocaleString("en-US")}</text>`;
+  g+=`<text x="${W-padR+6}" y="${yB+3}" text-anchor="start" class="ay aq">0</text>`;
+  if(hasRate){ const zy=yR(0); g+=`<line x1="${padL}" y1="${zy.toFixed(1)}" x2="${W-padR}" y2="${zy.toFixed(1)}" class="zeroR"/>`; }
+  // 막대 그룹
   pts.forEach((p,i)=>{
-    const v=getV(p), h=v/max*innerH, x=padX+i*slot+(slot-bw)/2, y=padT+(innerH-h), last=i===n-1;
-    g+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" rx="3" fill="${last?hi:color}"><title>${monthLbl(p.date)} · ${fmt(v)}</title></rect>`;
-    if(v && (showVal||last)) g+=`<text x="${(x+bw/2).toFixed(1)}" y="${(y-5).toFixed(1)}" text-anchor="middle" class="bv">${fmt(v)}</text>`;
-    if(i%lblEvery===0||last) g+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" class="bx">${monthLbl(p.date)}</text>`;
+    const c=cx(i), last=i===n-1;
+    const wx=c-bw-1, qx=c+1;
+    const wcol=last?"#3730A3":"#6366F1", qcol=last?"#0A7150":"#0E9E6E";
+    const wy=yW(p.weight), qy=yQ(p.shares);
+    g+=`<rect x="${wx.toFixed(1)}" y="${wy.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,yB-wy).toFixed(1)}" rx="2.5" fill="${wcol}"><title>${lblOf(p.date,mode)} · 비중 ${p.weight.toFixed(2)}%</title></rect>`;
+    g+=`<rect x="${qx.toFixed(1)}" y="${qy.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,yB-qy).toFixed(1)}" rx="2.5" fill="${qcol}"><title>${lblOf(p.date,mode)} · 보유 ${Math.round(p.shares).toLocaleString("en-US")}주</title></rect>`;
+    if(p.isNew) g+=`<text x="${c.toFixed(1)}" y="${(Math.min(wy,qy)-5).toFixed(1)}" text-anchor="middle" class="newtag">신규</text>`;
   });
-  return `<svg viewBox="0 0 ${W} ${H}" class="barsvg" preserveAspectRatio="xMidYMid meet">${g}</svg>`;
+  // 변화율 선 + 점
+  if(hasRate){
+    let d="",on=false;
+    pts.forEach((p,i)=>{ if(p.rate==null||!isFinite(p.rate)){ on=false; return; } const x=cx(i),y=yR(p.rate); d+=(on?"L":"M")+x.toFixed(1)+" "+y.toFixed(1)+" "; on=true; });
+    if(d) g+=`<path d="${d}" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    pts.forEach((p,i)=>{ if(p.rate==null||!isFinite(p.rate)) return; const x=cx(i),y=yR(p.rate);
+      g+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="#F59E0B"><title>${lblOf(p.date,mode)} · 변화율 ${(p.rate>0?"+":"")+p.rate.toFixed(1)}%</title></circle>`;
+      if(showVal) g+=`<text x="${x.toFixed(1)}" y="${(y-6).toFixed(1)}" text-anchor="middle" class="rlbl">${(p.rate>0?"+":"")+p.rate.toFixed(0)}%</text>`;
+    });
+  }
+  pts.forEach((p,i)=>{ if(i%lblEvery===0||i===n-1) g+=`<text x="${cx(i).toFixed(1)}" y="${H-10}" text-anchor="middle" class="bx">${lblOf(p.date,mode)}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="barsvg combosvg" style="width:${W}px;height:auto" preserveAspectRatio="xMidYMid meet">${g}</svg>`;
 }
 
 let STOCKMODE="month", CURDETAIL=null;
-function ptsByMode(pts){
-  if(STOCKMODE!=="year"||!pts||pts.length<=1) return pts||[];
-  const byYear=new Map();
-  pts.forEach(p=>byYear.set(p.date.slice(0,4),p));
-  const seen=new Set(),out=[];
-  [pts[0],...byYear.values()].sort((a,b)=>a.date<b.date?-1:1).forEach(p=>{ if(!seen.has(p.date)){ seen.add(p.date); out.push(p); } });
-  return out;
-}
-function detailInner(){
-  const {ticker,name,pts}=CURDETAIL;
-  const view=ptsByMode(pts);
-  const modeLabel=STOCKMODE==="year"?"연도별 · 매년 마지막 거래일":"월별 · 매월 마지막 거래일";
-  const seg=`<div class="seg sseg"><button class="${STOCKMODE==='month'?'on':''}" data-m="month">월별</button><button class="${STOCKMODE==='year'?'on':''}" data-m="year">연도별</button></div>`;
+function detailInner(view,mode){
+  const {ticker,name}=CURDETAIL;
+  const basis = mode==="week"?"매주 마지막 거래일":mode==="year"?"매년 마지막 거래일":"매월 마지막 거래일";
+  const modeKr = mode==="week"?"주별":mode==="year"?"연도별":"월별";
+  const prevKr = mode==="week"?"주":mode==="year"?"해":"달";
+  const seg=`<div class="seg sseg">`+
+    `<button class="${mode==='week'?'on':''}" data-m="week">주별</button>`+
+    `<button class="${mode==='month'?'on':''}" data-m="month">월별</button>`+
+    `<button class="${mode==='year'?'on':''}" data-m="year">연도별</button></div>`;
+  const legend=`<div class="clegend">`+
+    `<span class="lg"><i style="background:#6366F1"></i>비중(%) · 왼쪽축</span>`+
+    `<span class="lg"><i style="background:#0E9E6E"></i>보유수량(주) · 오른쪽축</span>`+
+    `<span class="lg"><i class="ln"></i>주식수 변화율(%)</span></div>`;
   const note=view.length<2
-    ? `<div class="detail-note">아직 한 시점뿐이에요. 데이터가 쌓이면 추이가 그려져요.</div>` : "";
+    ? `<div class="detail-note">아직 한 시점뿐이에요. 데이터가 쌓이면 추이가 그려져요.</div>`
+    : `<div class="detail-note">주황 선 = 직전 ${prevKr} 마지막 거래일 대비 <b>주식수 변화율</b>(점 위 숫자/마우스오버로 정확한 값). ‘신규’ = 직전 구간 미보유.</div>`;
   return `<div class="detail-inner">
-    <div class="detail-head"><span class="dh-tk">${ticker||""}</span><span class="dh-nm">${name||""}</span><span class="dh-sub">${modeLabel}</span>${seg}</div>
-    <div class="charts">
-      <div class="chart"><div class="chart-t">비중 (%)</div>${barSVG(view,p=>p.weight,v=>v.toFixed(1)+"%","#6366F1","#3730A3")}</div>
-      <div class="chart"><div class="chart-t">보유수량 (주)</div>${barSVG(view,p=>p.shares,v=>Math.round(v).toLocaleString("en-US"),"#0E9E6E","#0A7150")}</div>
-    </div>${note}</div>`;
+    <div class="detail-head"><span class="dh-tk">${ticker||""}</span><span class="dh-nm">${name||""}</span><span class="dh-sub">${modeKr} · ${basis}</span>${seg}</div>
+    ${legend}
+    <div class="combo">${comboChartSVG(view,mode)}</div>
+    ${note}</div>`;
+}
+
+async function renderDetail(det,key){
+  det.innerHTML=`<div class="detail-load">불러오는 중…</div>`;
+  try{
+    const view=await buildSeries(key,STOCKMODE);
+    det.innerHTML=detailInner(view,STOCKMODE);
+  }catch(err){ det.innerHTML=`<div class="detail-load">데이터를 불러오지 못했어요.</div>`; }
 }
 
 async function onRowClick(e){
@@ -521,7 +600,7 @@ async function onRowClick(e){
   if(segBtn){
     STOCKMODE=segBtn.getAttribute("data-m");
     const det=document.querySelector(".detail");
-    if(det && CURDETAIL) det.innerHTML=detailInner();
+    if(det && CURDETAIL && CURDETAIL.key) await renderDetail(det,CURDETAIL.key);
     return;
   }
   const row=e.target.closest(".row[data-key]");
@@ -532,13 +611,9 @@ async function onRowClick(e){
   document.querySelectorAll(".row.active").forEach(r=>r.classList.remove("active"));
   row.classList.add("active");
   const det=document.createElement("div");
-  det.className="detail"; det.innerHTML=`<div class="detail-load">불러오는 중…</div>`;
-  row.after(det);
-  try{
-    const pts=await buildSeries(row.getAttribute("data-key"));
-    CURDETAIL={ticker:row.getAttribute("data-ticker"),name:row.getAttribute("data-name"),pts:pts};
-    det.innerHTML=detailInner();
-  }catch(err){ det.innerHTML=`<div class="detail-load">데이터를 불러오지 못했어요.</div>`; }
+  det.className="detail"; row.after(det);
+  CURDETAIL={ticker:row.getAttribute("data-ticker"),name:row.getAttribute("data-name"),key:row.getAttribute("data-key")};
+  await renderDetail(det,CURDETAIL.key);
 }
 
 function render(snapshot,baseDate,changes){
