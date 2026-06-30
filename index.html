@@ -60,6 +60,7 @@
   .calpop[hidden]{display:none}
   .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
   .cal-head .cal-mo{font-size:13px;font-weight:700}
+  .cal-nav{display:inline-flex;gap:4px}
   .cal-nav button{appearance:none;border:1px solid var(--line);background:#fff;border-radius:8px;
     width:24px;height:24px;cursor:pointer;color:var(--muted);font:inherit;font-size:13px;line-height:1;padding:0}
   .cal-nav button:hover{background:#F5F7F9}
@@ -582,8 +583,8 @@ function renderCal(which){
   const selectedIso = which==="date" ? CURDATE : (CURBASE||null);
   const dow=DOW.map(d=>`<span class="cal-dow">${d}</span>`).join("");
   pop.innerHTML=
-    `<div class="cal-head"><div class="cal-nav"><button type="button" data-nav="-1">‹</button></div>`+
-    `<div class="cal-mo">${monthLabel(y,m)}</div><div class="cal-nav"><button type="button" data-nav="1">›</button></div></div>`+
+    `<div class="cal-head"><div class="cal-nav"><button type="button" data-nav="-12" aria-label="이전 해" title="이전 해">«</button><button type="button" data-nav="-1" aria-label="이전 달" title="이전 달">‹</button></div>`+
+    `<div class="cal-mo">${monthLabel(y,m)}</div><div class="cal-nav"><button type="button" data-nav="1" aria-label="다음 달" title="다음 달">›</button><button type="button" data-nav="12" aria-label="다음 해" title="다음 해">»</button></div></div>`+
     `<div class="cal-grid">${dow}${calGridHTML(y,m,selectedIso)}</div>`+
     (which==="base" ? `<div class="cal-foot"><button type="button" class="cal-clear" data-clear="1">비교 안 함</button></div>` : "");
 }
@@ -612,7 +613,7 @@ function bindCalPicker(which){
     const nav=e.target.closest("[data-nav]");
     if(nav){
       let {y,m}=CALVIEW[which]; m+=parseInt(nav.getAttribute("data-nav"),10);
-      if(m<0){m=11;y--;} else if(m>11){m=0;y++;}
+      y+=Math.floor(m/12); m=((m%12)+12)%12;
       CALVIEW[which]={y,m}; renderCal(which); return;
     }
     if(e.target.closest("[data-clear]")){ setBase(""); closeCalAll(); return; }
