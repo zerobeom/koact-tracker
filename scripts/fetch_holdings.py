@@ -32,14 +32,14 @@ from pathlib import Path
 # slug: 폴더/URL용 영문 식별자 / fid: 운용사 펀드ID / ticker: 거래소 단축코드(표시용)
 ETFS = [
     {"slug": "us-nasdaq", "fid": "2ETFQ1", "ticker": "0015B0",
-     "name": "KoAct 미국나스닥성장기업액티브", "start": "2025-02-01",
+     "name": "KoAct 미국나스닥성장기업액티브", "start": "2025-02-25",
      "usd_price": True,
      "benchmarks": [
          {"k": "b1", "label": "나스닥종합", "sym": ["IXIC", "YAHOO:^IXIC"]},
          {"k": "b2", "label": "나스닥100", "sym": ["YAHOO:^NDX", "NDX"]},
      ]},
     {"slug": "kr-valueup", "fid": "2ETFP3", "ticker": "495230",
-     "name": "KoAct 코리아밸류업액티브", "start": "2024-11-01",
+     "name": "KoAct 코리아밸류업액티브", "start": "2024-11-04",
      "benchmarks": [
          {"k": "b1", "label": "코스피", "sym": ["KS11", "KOSPI"]},
      ]},
@@ -389,11 +389,29 @@ def existing_dates(snap_dir: Path):
     return sorted(p.stem for p in snap_dir.glob("*.json"))
 
 
+def prune_before_start(snap_dir: Path, start_iso: str):
+    """상장일(start_iso, 'YYYY-MM-DD') 이전 날짜 스냅샷 파일을 삭제하고
+    삭제한 날짜 목록을 돌려준다. ISO 날짜라 문자열 비교로 충분하다."""
+    if not start_iso:
+        return []
+    removed = []
+    for p in snap_dir.glob("*.json"):
+        if p.stem < start_iso:
+            p.unlink()
+            removed.append(p.stem)
+    return sorted(removed)
+
+
 def process_etf(etf: dict, start: str, debug: bool = False):
     slug, fid = etf["slug"], etf["fid"]
     edir = DATA / slug
     snap_dir = edir / "snapshots"
     snap_dir.mkdir(parents=True, exist_ok=True)
+
+    # 상장일 이전에 잘못 수집된 스냅샷이 있으면 정리 (dates.json은 아래에서 재생성)
+    pruned = prune_before_start(snap_dir, etf.get("start"))
+    if pruned:
+        print(f"  [prune] 상장일({etf.get('start')}) 이전 {len(pruned)}건 삭제: {', '.join(pruned)}")
 
     print(f"[{slug}] {etf['name']} ({etf['ticker']}) — 요청 기준일 {start}")
     date_iso, holdings = fetch_latest_available(start, fid, debug=debug)
