@@ -162,7 +162,8 @@
   .barsvg .aq{fill:#0E9E6E}
   .barsvg .zeroR{stroke:#F4B73E;stroke-width:1;stroke-dasharray:3 3;opacity:.7}
   .barsvg .rlbl{font-size:9px;fill:#B97400;font-weight:700}
-  .barsvg .newtag{font-size:9px;fill:var(--in);font-weight:800}
+  .barsvg .evtag{font-size:9.5px;font-weight:800}
+  .barsvg .evguide{stroke:var(--line);stroke-width:1;stroke-dasharray:2 3;opacity:.7}
   .clegend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:2px 0 10px;font-size:12px;color:var(--muted)}
   .clegend .lg{display:inline-flex;align-items:center;gap:6px}
   .clegend i{width:11px;height:11px;border-radius:3px;display:inline-block;flex-shrink:0}
@@ -513,10 +514,13 @@ async function buildSeries(key,mode){
   }
   // 주식수 변화율(%) — 직전 버킷(전주/전월/전년 마지막 거래일) 대비
   for(let i=0;i<pts.length;i++){
-    if(i===0){ pts[i].rate=null; pts[i].isNew=false; continue; }
+    pts[i].isEntry=false; pts[i].isExit=false;
+    if(i===0){ pts[i].rate=null; continue; }
     const ps=pts[i-1].shares, cs=pts[i].shares;
-    if(ps>0){ pts[i].rate=(cs-ps)/ps*100; pts[i].isNew=false; }
-    else { pts[i].rate=null; pts[i].isNew=(cs>0); }   // 직전 미보유 → 신규 편입
+    if(ps>0 && cs>0){ pts[i].rate=(cs-ps)/ps*100; }          // 보유 유지
+    else if(ps===0 && cs>0){ pts[i].rate=0; pts[i].isEntry=true; }  // 편입: 0%로 시작
+    else if(ps>0 && cs===0){ pts[i].rate=-100; pts[i].isExit=true; } // 편출: 전량 매도
+    else { pts[i].rate=null; }                                // 계속 미보유
   }
   return pts;
 }
@@ -570,7 +574,11 @@ function comboChartSVG(pts,mode){
     const wy=yW(p.weight), qy=yQ(p.shares);
     g+=`<rect x="${(c-bw-1).toFixed(1)}" y="${wy.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,yB-wy).toFixed(1)}" rx="2.5" fill="${last?'#3730A3':'#6366F1'}"/>`;
     g+=`<rect x="${(c+1).toFixed(1)}" y="${qy.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0,yB-qy).toFixed(1)}" rx="2.5" fill="${last?'#0A7150':'#0E9E6E'}"/>`;
-    if(p.isNew) g+=`<text x="${c.toFixed(1)}" y="${(Math.min(wy,qy)-5).toFixed(1)}" text-anchor="middle" class="newtag">신규</text>`;
+    if(p.isEntry||p.isExit){
+      const lbl=p.isEntry?"편입":"편출", col=p.isEntry?"var(--in)":"var(--out)";
+      g+=`<line x1="${c.toFixed(1)}" y1="${(padT+13).toFixed(1)}" x2="${c.toFixed(1)}" y2="${yB}" class="evguide"/>`;
+      g+=`<text x="${c.toFixed(1)}" y="${(padT+9).toFixed(1)}" text-anchor="middle" class="evtag" fill="${col}">${lbl}</text>`;
+    }
   });
   // 변화율 선 + 점
   if(hasRate){
@@ -602,7 +610,7 @@ function detailInner(view,mode){
     `<span class="lg"><i class="ln"></i>주식수 변화율(%)</span></div>`;
   const note=view.length<2
     ? `<div class="detail-note">아직 한 시점뿐이에요. 데이터가 쌓이면 추이가 그려져요.</div>`
-    : `<div class="detail-note">막대에 커서를 올리면 그 시점의 비중·보유수량·변화율 수치가 표시됩니다. 주황 선 = 직전 ${prevKr} 마지막 거래일 대비 <b>주식수 변화율</b>, ‘신규’ = 직전 구간 미보유.</div>`;
+    : `<div class="detail-note">막대에 커서를 올리면 그 시점의 비중·보유수량·변화율 수치가 표시됩니다. 주황 선 = 직전 ${prevKr} 마지막 거래일 대비 <b>주식수 변화율</b>. <b style="color:var(--in)">편입</b>(직전 구간 미보유→보유)은 0%에서 시작, <b style="color:var(--out)">편출</b>(전량 매도)은 -100%로 표시됩니다.</div>`;
   return `<div class="detail-inner">
     <div class="detail-head"><span class="dh-tk">${ticker||""}</span><span class="dh-nm">${name||""}</span><span class="dh-sub">${modeKr} · ${basis}</span>${seg}</div>
     ${legend}
@@ -616,7 +624,8 @@ function detTooltip(p,mode){
     : mode==="month" ? fmtDate(p.date)+" · 월 마지막 거래일"
     : fmtDate(p.date)+" · 주 마지막 거래일";
   let r;
-  if(p.isNew) r="신규편입";
+  if(p.isEntry) r="0% (편입)";
+  else if(p.isExit) r="-100% (편출)";
   else if(p.rate==null||!isFinite(p.rate)) r="—";
   else r=(p.rate>0?"+":"")+p.rate.toFixed(1)+"%";
   return `<div class="tt-d">${dlbl}</div>`+
