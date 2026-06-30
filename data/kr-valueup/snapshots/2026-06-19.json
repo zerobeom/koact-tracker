@@ -845,55 +845,5 @@
       "is_cash": true,
       "key": "KRD010010001"
     }
-  ],
-  "prev_date": "2026-06-18",
-  "changes": {
-    "added": [],
-    "removed": [],
-    "bought": [
-      {
-        "name": "대덕전자",
-        "ticker": "353200",
-        "shares": 148,
-        "prev_shares": 85,
-        "share_delta": 63,
-        "weight": 1.1814,
-        "prev_weight": 0.716,
-        "weight_delta": 0.4654
-      },
-      {
-        "name": "삼성전자",
-        "ticker": "005930",
-        "shares": 1010,
-        "prev_shares": 980,
-        "share_delta": 30,
-        "weight": 17.4378,
-        "prev_weight": 16.4202,
-        "weight_delta": 1.0176
-      },
-      {
-        "name": "LG이노텍",
-        "ticker": "011070",
-        "shares": 32,
-        "prev_shares": 24,
-        "share_delta": 8,
-        "weight": 1.9554,
-        "prev_weight": 1.4484,
-        "weight_delta": 0.507
-      }
-    ],
-    "sold": [
-      {
-        "name": "SK스퀘어",
-        "ticker": "402340",
-        "shares": 85,
-        "prev_shares": 110,
-        "share_delta": -25,
-        "weight": 6.8823,
-        "prev_weight": 8.4894,
-        "weight_delta": -1.6071
-      }
-    ]
-  },
-  "updated_at": "2026-06-30 19:09"
+  ]
 }
