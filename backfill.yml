@@ -1,0 +1,50 @@
+name: Backfill KoAct holdings (past dates)
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "시작일 (YYYY-MM-DD, 예: 2025-02-01)"
+        required: true
+      end_date:
+        description: "종료일 (YYYY-MM-DD, 예: 2026-06-26)"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-holdings
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Backfill holdings
+        run: |
+          START="${{ github.event.inputs.start_date }}"
+          END="${{ github.event.inputs.end_date }}"
+          python scripts/fetch_holdings.py "${START//-/}:${END//-/}"
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --staged --quiet; then
+            echo "변동 없음 — 커밋 생략"
+          else
+            git commit -m "data: backfill ${{ github.event.inputs.start_date }} ~ ${{ github.event.inputs.end_date }}"
+            git push
+          fi
