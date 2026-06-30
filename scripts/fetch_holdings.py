@@ -15,7 +15,8 @@ KoAct ETF 일별 전체 구성종목 수집기 (다중 ETF 지원).
 
 사용:
     python scripts/fetch_holdings.py            # 오늘(KST) 기준, 모든 ETF
-    python scripts/fetch_holdings.py 20260626   # 특정일 강제 수집(과거 채우기)
+    python scripts/fetch_holdings.py 20260626   # 특정일 강제 수집(과거 채우기, 단일일)
+    python scripts/fetch_holdings.py 20250201:20260629   # 기간 채우기(영업일만 순회)
     python scripts/fetch_holdings.py --debug     # 파싱 전 원본 표 출력
 """
 from __future__ import annotations
@@ -445,10 +446,20 @@ def process_etf(etf: dict, start: str, debug: bool = False):
         print(f"  [perf] 실패(건너뜀): {e}")
 
 
+def business_days(start_yyyymmdd: str, end_yyyymmdd: str):
+    d = datetime.strptime(start_yyyymmdd, "%Y%m%d")
+    end = datetime.strptime(end_yyyymmdd, "%Y%m%d")
+    while d <= end:
+        if d.weekday() < 5:  # 월~금
+            yield d.strftime("%Y%m%d")
+        d += timedelta(days=1)
+
+
 def main():
+    import time
+
     args = [a for a in sys.argv[1:] if a != "--debug"]
     debug = "--debug" in sys.argv
-    start = args[0] if args else today_kst()
 
     DATA.mkdir(parents=True, exist_ok=True)
     # 사이트가 읽는 ETF 목록
@@ -456,6 +467,22 @@ def main():
         json.dumps([{k: e[k] for k in ("slug", "name", "ticker", "fid")} for e in ETFS],
                    ensure_ascii=False, indent=2), encoding="utf-8")
 
+    if args and ":" in args[0]:
+        # 기간 채우기: "20250201:20260629" — 영업일만, 과거→최근 순서로 처리
+        start_s, end_s = args[0].split(":", 1)
+        days = list(business_days(start_s, end_s))
+        print(f"[backfill] {start_s} ~ {end_s} · 영업일 {len(days)}일 처리 시작")
+        for i, ds in enumerate(days, 1):
+            print(f"\n--- ({i}/{len(days)}) {ds} ---")
+            for etf in ETFS:
+                etf_start = etf.get("start", "1900-01-01").replace("-", "")
+                if ds < etf_start:
+                    continue  # 상장 전 날짜는 건너뜀
+                process_etf(etf, ds, debug=debug)
+                time.sleep(1.0)  # 서버 부담 완화
+        return 0
+
+    start = args[0] if args else today_kst()
     for etf in ETFS:
         process_etf(etf, start, debug=debug)
     return 0
