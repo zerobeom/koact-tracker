@@ -1,0 +1,33 @@
+{
+  "date": "2025-02-20",
+  "ticker": "0015B0",
+  "fund_id": "2ETFQ1",
+  "name": "KoAct 미국나스닥성장기업액티브",
+  "count": 0,
+  "holdings": [
+    {
+      "isin": "CASH00000001",
+      "name": "설정현금액",
+      "code": "CASH00000001",
+      "ticker": "",
+      "weight": 0.0,
+      "shares": 500000000,
+      "amount": 500000000.0,
+      "price": null,
+      "is_cash": true,
+      "key": "CASH00000001"
+    },
+    {
+      "isin": "KRD010010001",
+      "name": "원화현금",
+      "code": "KRD010010001",
+      "ticker": "",
+      "weight": 0.0,
+      "shares": 500000000,
+      "amount": 500000000.0,
+      "price": null,
+      "is_cash": true,
+      "key": "KRD010010001"
+    }
+  ]
+}
