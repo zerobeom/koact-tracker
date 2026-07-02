@@ -523,7 +523,7 @@
       "price": null,
       "is_cash": false,
       "key": "US22788C1053",
-      "price_usd": 772.74
+      "price_usd": 193.18
     },
     {
       "isin": "US7475251036",
@@ -906,5 +906,5 @@
       }
     ]
   },
-  "updated_at": "2026-07-02 07:56"
+  "updated_at": "2026-07-02 17:29"
 }
